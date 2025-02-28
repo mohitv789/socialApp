@@ -1,0 +1,12 @@
+<div class="container row" *ngIf="!!comment">
+  <div class="name col-md-4 m-auto">
+    <p class="float-start" *ngIf="!!profile">
+      <img class="circular_image" [src]="'http://localhost:8000' + profile.avatar" alt="Profile Image" style="margin-right : 10px;">
+      <a [routerLink]="['/profile/' + comment.commented_by]">
+        {{ fullName }}
+      </a> says : {{ comment.reelcomment }}</p>
+    <p class="float-start" *ngIf="!profile">User {{ comment.commented_by }} says : {{ comment.reelcomment }}</p>
+  </div>
+
+
+</div>

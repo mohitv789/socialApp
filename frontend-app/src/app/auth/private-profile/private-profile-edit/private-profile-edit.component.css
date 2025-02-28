@@ -1,0 +1,37 @@
+.container {
+  margin: 20px auto;
+  padding: 20px auto;
+  justify-content: center;
+  max-width: 800px;
+}
+.row {
+  margin: 20px auto;
+}
+
+.imagerow {
+  margin: 10px auto;
+}
+.imagerow > img {
+  width: 250px;
+  height: 250px;
+  overflow: hidden;
+  background-color: #a0c9d5;
+  display:block;
+  margin:auto;
+}
+.btn {
+  border: 3px solid;
+  margin: 5px;
+  border-image-slice: 1;
+  background-color: #a0c9d5;
+  -webkit-text-fill-color: black !important;
+  text-decoration: none;
+  color: black !important;
+}
+.btn:hover, .btn:focus {
+  -webkit-text-fill-color: black !important;
+  margin: 5px;
+  border: 3px solid #0c527b !important;
+  box-shadow: #0c2b57 1px 0 10px;
+  text-decoration: underline;
+}

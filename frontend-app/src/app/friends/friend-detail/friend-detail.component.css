@@ -1,0 +1,62 @@
+.container {
+  margin: 20px auto;
+  padding: 20px auto;
+  justify-content: center;
+  max-width: 1000px;
+}
+.mainrow {
+  text-align: left;
+  margin: 10px auto;
+  border-radius: 25px;
+  border: 1px solid #0c527b !important;
+  box-shadow: #0c2b57 1px 0 10px;
+}
+.heading {
+  margin-top: 8px !important;
+  margin-bottom: 8px !important;
+}
+.activities {
+  padding: 10px auto !important;
+  margin: 20px auto !important;
+  border-radius: 5px;
+  justify-content:center;
+  max-width: 80%;
+  text-align: center;
+}
+.feed-item {
+  color: #0c2b57;
+  text-align: left;
+  box-shadow: #0c2b57 1px 0 10px;
+  background-color: #a0c9d5;
+  margin: 15px auto;
+  padding: 5px;
+  height: 50px;
+  max-width: 100%;
+}
+
+.avatar {
+  border-radius: 25px;
+  overflow: hidden;
+  background-color: #a0c9d5;
+  display:inline-block;
+  vertical-align:middle;
+}
+
+.btn {
+  border: 3px solid;
+  margin: 5px;
+  border-image-slice: 1;
+  background-color: pink;
+  -webkit-text-fill-color: black !important;
+  text-decoration: none;
+  color: black !important;
+  max-width: fit-content;
+}
+.btn:hover, .btn:focus {
+  -webkit-text-fill-color: rgb(229, 54, 14) !important;
+  margin: 5px;
+  border: 3px solid #0c527b !important;
+  box-shadow: #0c2b57 1px 0 10px;
+  text-decoration: underline;
+  max-width: fit-content;
+}

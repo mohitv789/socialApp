@@ -1,0 +1,21 @@
+.main {
+  background-color: #2292b7;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  padding : 10px;
+}
+a.btn {
+  border: 3px solid;
+  border-image-slice: 1;
+  background-color: #a0c9d5;
+  -webkit-text-fill-color: black !important;
+  text-decoration: none;
+  color: black !important;
+}
+
+a.btn:hover, a.btn:focus {
+  -webkit-text-fill-color: black !important;
+  border: 3px solid #0c527b !important;
+  box-shadow: #0c2b57 1px 0 10px;
+  text-decoration: underline;
+}

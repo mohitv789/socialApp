@@ -1,0 +1,6 @@
+<div class="container" *ngIf="(stories$ | async) as stories">
+  <app-pushed-item
+    *ngFor="let storyEl of stories.feed_stories;"
+    [story]="storyEl"
+    [feed_stories_comments]=stories.feed_stories_comments></app-pushed-item>
+</div>

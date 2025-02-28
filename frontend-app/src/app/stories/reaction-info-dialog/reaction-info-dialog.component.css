@@ -1,0 +1,27 @@
+.custom-dialogbox {
+
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
+  text-align: center;
+}
+
+
+.container {
+  margin: 20px auto;
+  padding: 20px auto;
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
+  border: 3px solid #0c527b !important;
+  box-shadow: #0c2b57 1px 0 10px;
+  max-width: 750px;
+
+}
+
+.container  > .item-data {
+  padding: 20px auto;
+}
+.container > a {
+
+  overflow-x: hidden !important;
+  overflow-y: hidden !important;
+}

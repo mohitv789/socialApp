@@ -1,0 +1,40 @@
+.editor-container {
+  height: 100vh;
+  width: auto;
+}
+
+.menubar-container {
+  height: 5%;
+}
+
+.work-panel {
+  background: #e2e1e0;
+  height: 92%;
+  min-height: 663px;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+}
+
+.image-picker-container {
+  position: relative;
+  z-index: 10;
+  background: #303030;
+  min-width: 208px;
+  max-width: 208px;
+  height: 78%;
+}
+
+.canvas-container {
+  padding: 16px;
+  background: #ffffff;
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+}
+
+.toolbar-container {
+  background: #303030;
+  min-width: 208px;
+  max-width: 208px;
+  height: 78%;
+}

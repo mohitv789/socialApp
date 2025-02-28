@@ -1,0 +1,90 @@
+<div class="row container" *ngIf="!!story">
+  <div class="col-xs-12">
+    <form [formGroup]="storyStartForm" enctype="multipart/form-data">
+
+      <div class="row">
+        <div class="col-xs-12">
+          <div class="form-group">
+            <label for="title">Title</label>
+            <input
+              type="text"
+              id="title"
+              formControlName="title"
+              class="form-control">
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-xs-12">
+          <div class="form-group">
+            <label for="description">Description</label>
+            <input
+              type="text"
+              id="description"
+              formControlName="description"
+              class="form-control">
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-xs-12">
+          <div class="form-group">
+            <label for="longDescription">Background</label>
+            <input
+              type="text"
+              id="longDescription"
+              formControlName="longDescription"
+              class="form-control">
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-8">
+
+          <div *ngIf="!imageUrl" class="col-12 imagerow">
+            <img [src]="storyStartForm.get('image')!.value" style="max-width: 600px;">
+          </div>
+          <div *ngIf="!!imageUrl" class="col-12 imagerow">
+            <img [src]="imageUrl" style="max-width: 200px;">
+          </div>
+        </div>
+        <div class="col-4">
+
+          <input #fileInput type="file" id="upload-file-input" style="display:none;" accept="image/*" (change)="onFileSelected($event)"/>
+          <button mat-icon-button id='upload-file-button' (click)="onUploadButtonTrigger(fileInput)"> <i class="material-icons icons">add_a_photo</i></button>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-xs-12" formArrayName="tags">
+          <div class="row" *ngFor="let tagEl of tags.controls; let i = index">
+            <div class="row" [formGroupName]="i">
+              <div class="col-md-8">
+                <input
+                  style="margin: 8px;"
+                  type="text"
+                  class="form-control"
+                  formControlName="name"
+                  placeholder="Tag Name">
+              </div>
+              <div class="col-md-4">
+                <button
+                  type="button"
+                  class="btn btn-primary float-end"
+                  (click)="onDeleteTag(i)">Delete Tag</button>
+
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row" *ngIf="!(storyStartForm.value.tags.length > 0)">
+          <button
+            style="margin:10px auto;"
+            type="button"
+            class="btn btn-primary float-end"
+            (click)="onAddTag()">Add Tag</button>
+
+        </div>
+      </div>
+    </form>
+  </div>
+</div>

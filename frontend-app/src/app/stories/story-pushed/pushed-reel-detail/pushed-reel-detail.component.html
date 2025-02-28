@@ -1,0 +1,45 @@
+
+<div class="container">
+
+  <div class="row" *ngIf="(reel$ | async) as reel">
+    <div class="mainrow">
+      <h1 style="text-align: center; background-color: #a0c9d5; border-radius: 5px; padding: 10px;">Caption : {{ reel.caption }}</h1>
+      <img [src]="'http://localhost:8000' + reel.image" class="card-img-top img-fluid" style="max-width: 800px;">
+    </div>
+
+    <div class="container">
+      <div class="row" *ngIf="!!showreactionAction">
+        <div class="col-md-12">
+          <button class="btn btn-primary float-start" *ngIf="!!isFriend && !chatroom_membership && !!showINITChatroom" (click)="createReelChatRoom()">Init Chat</button>
+          <button class="btn btn-primary float-start" *ngIf="!!isFriend && !!chatroom_membership" (click)="goToChatRoom()">Goto Chat</button>
+          <button class="btn btn-primary float-start" *ngIf="!!isFriend && !chatroom_membership && !!canshowJoinChatroom" (click)="joinChatRoom()">Join Chat</button>
+          <button class="btn btn-primary float-start" *ngIf="!!isFriend && !!chatroom_membership && !!showLeaveChatroom" (click)="leaveChatRoom()">Leave Chat</button>
+          <button class="btn btn-primary float-start" *ngIf="!!isFriend && !!can_delete_charoom" (click)="deleteChatroom()">Delete Chat</button>
+          <button class="btn btn-primary float-start" *ngIf="isFriend == true" (click)="addComment()">Add Comment</button>
+          <button class="btn btn-primary float-end" *ngIf="showLike == true" (click)="addLike()">Add Like</button>
+          <button class="btn btn-primary float-end" *ngIf="showLike == false" (click)="deleteLike()">Remove Like</button>
+          <button class="btn btn-primary float-end" *ngIf="showLove == true" (click)="addLove()">Add Love</button>
+          <button class="btn btn-primary float-end" *ngIf="showLove == false" (click)="deleteLove()">Remove Love</button>
+          <button class="btn btn-primary float-end" *ngIf="showCelebrate == true" (click)="addCelebrate()">Add Celebration</button>
+          <button class="btn btn-primary float-end" *ngIf="showCelebrate == false" (click)="deleteCelebrate()">Remove Celebration</button>
+        </div>
+      </div>
+      <div class="row" style="height:20px"></div>
+      <div class="row">
+        <div class="col-md-12">
+          <p class="float-start" *ngIf="comments.length > 0" style="color:#2292b7; vertical-align: middle; margin: 0 10px !important;"> Comments : {{comments.length}}</p>
+          <p class="float-end" *ngIf="totalLikes > 0 || totalLoves > 0 || totalCelebrates > 0" style="cursor: pointer;color:#2292b7;text-decoration: underline;  vertical-align: middle;
+            margin: 0 10px !important;" (click)="showReactionInfo()"> Likes : {{totalLikes}} , Loves : {{totalLoves}} & Celebrations : {{totalCelebrates }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="commentrow" *ngIf="comments.length > 0">
+      <app-reel-comment-item
+      *ngFor="let commentEl of comments; let i = index"
+      [comment]="commentEl"
+      [index]="i"></app-reel-comment-item>
+    </div>
+  </div>
+</div>
+

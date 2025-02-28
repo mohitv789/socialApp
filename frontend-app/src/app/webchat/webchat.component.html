@@ -1,0 +1,30 @@
+<div class="container">
+  <div class="row parent">
+    <h2>This Chatroom is about {{chatroom_obj}} "{{chatroom_title}}" from user {{fullName}}.</h2>
+    <img style="max-width: 400px;max-height: 400px;" [src]="'http://localhost:8000' + image" alt="{{ chatroom_title }}" class="card-img-top img-fluid">
+  </div>
+  <div class="row parent" *ngIf="!chatroom_deleted">
+    <h3 style="border-bottom: 1px solid black;">This chatroom has been started by <a [routerLink]="['/profile/' + chatroom_owner]">{{chatroom_owner_name}}</a>.</h3>
+    <div class="col-md-4">
+      <h3>Chatroom Participants</h3>
+      <div class="participants_cont row" *ngFor="let participant of chatroom_data.participants">
+        <div class="row" style="text-align: center;">
+          <p class="float-start" *ngIf="!!participant.first_name"><a [routerLink]="['/profile/' + participant.id]">{{ participant.first_name }}</a></p>
+          <p class="float-start" *ngIf="!participant.first_name"><a [routerLink]="['/profile/' + participant.id]">{{ participant.id }}</a></p>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-8">
+      <div class="row">
+        <app-chat-form></app-chat-form>
+      </div>
+      <div class="row">
+        <app-chat-history [chatroom_deleted]="chatroom_deleted" [chatroom_object_id]="chatroom_obj_id" [chatroom_object]="chatroom_obj" [chatroomId]="chatroomId"></app-chat-history>
+      </div>
+    </div>
+  </div>
+  <div class="row parent" *ngIf="!!chatroom_deleted">
+    <h2 style="border-bottom: 1px solid black;max-width:fit-content; border-radius: 5px; background-color: red;">This chatroom has been deleted by <a [routerLink]="['/profile/' + chatroom_owner]">{{chatroom_owner_name}}</a> who started it.</h2>
+    <app-chat-history [chatroom_deleted]="chatroom_deleted" [chatroom_object_id]="chatroom_obj_id" [chatroom_object]="chatroom_obj" [chatroomId]="chatroomId"></app-chat-history>
+  </div>
+</div>

@@ -1,0 +1,23 @@
+<header class="main">
+  <div class="row">
+    <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-end">
+      <div class="text-end">
+        <ul *ngIf="!!authenticated" class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
+          <!-- <li><a routerLink="/story/new" class="btn btn-outline-light me-2">Create Story</a></li>
+          <li><a routerLink="/friends" class="btn btn-outline-light me-2">Your Friendship</a></li>
+          <li><a routerLink="/profile/personal" class="btn btn-outline-light me-2">Your Profile</a></li> -->
+          <li><a routerLink="/feed" class="btn btn-outline-light me-2">Feed</a></li>
+          <li><a routerLink="/story" class="btn btn-outline-light me-2">Your Stories</a></li>
+          <li><a routerLink="/login" class="btn btn-outline-light me-2" (click)="logout()">Logout</a></li>
+        </ul>
+      </div>
+
+      <div class="text-end">
+        <ul *ngIf="!authenticated" class="nav col-12 col-lg-auto me-lg-auto mb-2 justify-content-center mb-md-0">
+          <li><a routerLink="/login" class="btn btn-outline-light me-2">Login</a></li>
+          <li><a routerLink="/register" class="btn btn-outline-light me-2">Register</a></li>
+      </ul>
+      </div>
+    </div>
+  </div>
+</header>

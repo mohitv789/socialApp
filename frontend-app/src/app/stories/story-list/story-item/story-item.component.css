@@ -1,0 +1,37 @@
+
+.card {
+  background: #d4f3fd;
+  color: black;
+  float: none;
+  display: flex;
+  margin: 20px auto;
+  padding: 10px auto;
+  max-width: 800px;
+  max-height: 800px;
+}
+
+a.btn {
+  border: 3px solid;
+  border-image-slice: 1;
+  background-color: #a0c9d5;
+  -webkit-text-fill-color: black !important;
+  text-decoration: none;
+  color: black !important;
+}
+
+a.btn:hover, a.btn:focus {
+  -webkit-text-fill-color: black !important;
+  border: 3px solid #0c527b !important;
+  box-shadow: #0c2b57 1px 0 10px;
+  text-decoration: underline;
+}
+
+.button-row {
+  display: flex;
+  padding: 10px 10px;
+}
+
+.card-footer.p {
+  vertical-align: middle;
+  margin: 0 0 !important;
+}

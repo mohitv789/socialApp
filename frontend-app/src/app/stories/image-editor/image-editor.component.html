@@ -1,0 +1,11 @@
+<div class="editor-container">
+  <button class="menubar-container" mat-icon-button (click)="onClose()"><i class="material-icons icons">clear</i></button>
+  <div class="work-panel">
+    <div class='canvas-container'>
+      <app-canvas></app-canvas>
+    </div>
+    <div class="toolbar-container">
+      <app-toolbar (closeSignal)="getNotification($event)"></app-toolbar>
+    </div>
+  </div>
+</div>

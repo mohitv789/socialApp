@@ -1,0 +1,69 @@
+
+<div class="container" *ngIf="!!loggedInUserId">
+  <div *ngIf="(story$ | async) as story" class="row">
+
+    <h4 style="background-color: pink;" *ngIf="!!isBlocking">You have been blocked by {{ fullName }}, hence cannot start or go to chatrooms.</h4>
+
+    <div class="mainrow">
+      <h3>{{ story.title }}</h3>
+      <p>{{ story.description }}</p>
+      <p>{{ story.longDescription }}</p>
+      <img [src]="'http://localhost:8000' + story.image" alt="{{ story.title }}" class="card-img-top img-fluid">
+      <div *ngFor="let tag of story.tags">
+        <h5>TAG : {{ tag.name }}</h5>
+      </div>
+      <p *ngIf="!!profile">Published by <img class="circular_image" [src]="'http://localhost:8000'+ profile.avatar" alt="Profile Image" style="margin-right:5px;">
+        <a style="color:#2292b7; vertical-align: middle; margin: 0 10px !important;" [routerLink]="['/profile/' + story.owner]">{{ fullName }}
+        </a>
+      </p>
+      <p class="float-start m-auto" *ngIf="!profile">Published by User : <span style="margin-right:5px;color:#2292b7; vertical-align: middle; margin: 0 10px !important;">{{ storyOwner }}</span></p>
+    </div>
+
+    <div class="reelrow">
+      <app-pushed-reel-item
+      *ngFor="let reelEl of story.reels; let i = index"
+      [reel]="reelEl"
+      [index]="i"></app-pushed-reel-item>
+    </div>
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12">
+          <button class="btn btn-primary float-start" *ngIf="!!isFriend && !chatroom_membership && !!showINITChatroom && !isBlocking" (click)="createStoryChatRoom()">Start Chat</button>
+          <button class="btn btn-primary float-start" *ngIf="!!isFriend && !!chatroom_membership && (!isBlocking || !!can_delete_charoom)" (click)="goToChatRoom()">Goto Chat</button>
+          <button class="btn btn-primary float-start" *ngIf="!!isFriend && !chatroom_membership && !!canshowJoinChatroom && !isBlocking" (click)="joinChatRoom()">Join Chat</button>
+          <button class="btn btn-primary float-start" *ngIf="!!isFriend && !!chatroom_membership && !!showLeaveChatroom" (click)="leaveChatRoom()">Leave Chat</button>
+          <button class="btn btn-primary float-start" *ngIf="!!isFriend && !!can_delete_charoom" (click)="deleteChatroom()">Delete Chat</button>
+          <button class="btn btn-primary float-start" *ngIf="isFriend == true" (click)="addComment()">Add Comment</button>
+          <button class="btn btn-primary float-end" *ngIf="showLike == true" (click)="addLike()">Add Like</button>
+          <button class="btn btn-primary float-end" *ngIf="showLike == false" (click)="deleteLike()">Remove Like</button>
+          <button class="btn btn-primary float-end" *ngIf="showLove == true" (click)="addLove()">Add Love</button>
+          <button class="btn btn-primary float-end" *ngIf="showLove == false" (click)="deleteLove()">Remove Love</button>
+          <button class="btn btn-primary float-end" *ngIf="showCelebrate == true" (click)="addCelebrate()">Add Celebration</button>
+          <button class="btn btn-primary float-end" *ngIf="showCelebrate == false" (click)="deleteCelebrate()">Remove Celebration</button>
+        </div>
+      </div>
+      <div class="row" style="height:20px"></div>
+      <div class="row">
+        <div class="col-md-12">
+          <p class="float-start" *ngIf="comments.length > 0" style="color:#2292b7; vertical-align: middle; margin: 0 10px !important;"> Comments : {{comments.length}}</p>
+          <p class="float-end" *ngIf="totalLikes > 0 || totalLoves > 0 || totalCelebrates > 0" style="cursor: pointer;color:#2292b7;text-decoration: underline;  vertical-align: middle;
+            margin: 0 10px !important;" (click)="showReactionInfo()"> Likes : {{totalLikes}} , Loves : {{totalLoves}} & Celebrations : {{totalCelebrates }}</p>
+        </div>
+      </div>
+    </div>
+
+
+
+
+    <div class="commentrow" *ngIf="comments.length > 0">
+      <app-story-comment-item
+        *ngFor="let commentEl of comments; let i = index"
+        [comment]="commentEl"
+        [index]="i"></app-story-comment-item>
+    </div>
+
+  </div>
+
+</div>
+
+

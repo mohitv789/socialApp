@@ -1,0 +1,30 @@
+<h2 style="text-align: center; background-color: #a0c9d5; border-bottom-left-radius: 5px; border-bottom-right-radius: 5px;padding: 10px;">New Chatroom Creation</h2>
+<mat-dialog-content>
+  <div class="container">
+    <h2>You are {{activity}} a chatroom visible to all friends of {{fullName | titlecase}}.</h2>
+    <p *ngIf="!!data.story">Chatroom is related to story {{data.story.title}} from your friend {{fullName | titlecase}}.</p>
+    <p *ngIf="!!data.reel">Chatroom is related to reel {{data.reel.caption}} from your friend {{fullName | titlecase}}.</p>
+    <p>Please refrain from abusing this feature as this chatroom can be blocked by anyone seeing this if it seems inappropiate to them.</p>
+    <p>Press OK to Cotinue or Cancel to Go Back!</p>
+
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions>
+  <div class="buttonrow row">
+    <div class="col-md-6">
+      <button class="btn btn-primary float-start" (click)="onSave()">
+        Ok
+      </button>
+
+    </div>
+    <div class="col-md-6">
+      <button class="btn btn-primary float-end" (click)="onClose()">
+        Cancel
+      </button>
+    </div>
+
+  </div>
+
+
+</mat-dialog-actions>

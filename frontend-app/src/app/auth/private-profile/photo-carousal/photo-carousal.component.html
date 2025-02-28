@@ -1,0 +1,24 @@
+<h2 *ngIf="!!photo_activity"style="text-align: center;  margin-top: 8px !important; margin-bottom: 8px !important;">Your Photos</h2>
+<h2 *ngIf="!photo_activity" style="text-align: center;  margin-top: 8px !important; margin-bottom: 8px !important;">Wow No Photos...</h2>
+<ngb-carousel *ngIf="!!photo_activity" id="carousel_1" #photoCarousel="ngbCarousel" [showNavigationArrows]="true" [showNavigationIndicators]="true" style="margin: 10px auto;">
+
+  <ng-template ngbSlide *ngFor="let photo_item of photo_activity; index as i">
+
+    <div class="picsum-img-wrapper d-flex justify-content-center">
+      <img style="max-width: 800px; height: 600px;" [src]="photo_item.image" alt="photo_item.title">
+    </div>
+
+    <div class="carousel-caption">
+      <h3>{{ photo_item.title }}</h3>
+      <p>This photo has {{ photo_item.comments }} Comments, {{ photo_item.likes }} Likes, {{ photo_item.loves }} Loves & {{ photo_item.celebrates }} Celebrations </p>
+    </div>
+
+    <a class="carousel-control-prev" href="#carousel_1" data-slide="prev">
+      <span class="carousel-control-prev-icon"></span>
+    </a>
+    <a class="carousel-control-next" href="#carousel_1" data-slide="next">
+      <span class="carousel-control-next-icon"></span>
+    </a>
+  </ng-template>
+
+</ngb-carousel>

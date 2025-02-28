@@ -1,0 +1,40 @@
+<div class="custom-dialogbox">
+
+  <mat-tab-group class="group" [color]="'accent'" animationDuration="500ms">
+    <mat-tab
+      class="mat-tab"
+      label="Likes"
+    >
+      <div class="container" *ngFor="let item of data.likes | keyvalue">
+        <div class="itemdata" style="margin: 20px auto;">
+          <a style="cursor: pointer;color: #0c527b;text-decoration: none;" mat-dialog-close [routerLink]="['/profile/' + item.key]">{{ item.value }}</a>
+
+        </div>
+
+      </div>
+    </mat-tab>
+    <mat-tab
+    class="mat-tab"
+    label="Loves"
+    >
+      <div class="container" *ngFor="let item of data.loves | keyvalue">
+        <div class="itemdata" style="margin: 20px auto;">
+          <a style="cursor: pointer;color: #0c527b;text-decoration: none;" mat-dialog-close [routerLink]="['/profile/' + item.key]">{{ item.value }}</a>
+
+        </div>
+      </div>
+    </mat-tab>
+    <mat-tab
+    class="mat-tab"
+    label="Celebrations"
+    >
+      <div class="container" *ngFor="let item of data.celebrates | keyvalue">
+        <div class="itemdata" style="margin: 20px auto;">
+          <a style="cursor: pointer;color: #0c527b;text-decoration: none;" mat-dialog-close [routerLink]="['/profile/' + item.key]">{{ item.value }}</a>
+
+        </div>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+
+</div>

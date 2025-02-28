@@ -1,0 +1,52 @@
+<div class="custom-friendbox">
+  <mat-tab-group dynamicHeight [color]="'accent'" animationDuration="500ms">
+    <mat-tab
+      class="mat-tab"
+      label="Friends"
+    >
+      <app-friend-list></app-friend-list>
+    </mat-tab>
+    <mat-tab
+    class="mat-tab"
+    label="Pending Requests"
+    >
+      <div class="itemData" *ngIf="!!receivedRequests.length">
+        <div *ngFor="let reqItem of receivedRequests" class="container">
+          <h3>From User : {{ reqItem.from_user }}</h3>
+          <p>Message Received : {{ reqItem.message }}</p>
+          <div class="row">
+            <div class="col-md-6">
+              <button class="btn btn-primary float-start" (click)="acceptRequest(reqItem.id)">Accept Friend</button>
+            </div>
+            <div class="col-md-6">
+              <button class="btn btn-primary float-end" (click)="rejectRequest(reqItem.id)">Reject Request</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+    <mat-tab
+    class="mat-tab"
+    label="Sent Requests"
+    >
+      <div class="itemData" *ngIf="!!sentRequests.length">
+        <div *ngFor="let reqItem of sentRequests" class="container">
+          <h3>To User : {{ reqItem.to_user }}</h3>
+          <p>Message Sent : {{ reqItem.message }}</p>
+        </div>
+      </div>
+    </mat-tab>
+    <mat-tab
+    class="mat-tab"
+    label="Rejected Requests"
+    >
+      <div class="itemData" *ngIf="!!rejectedRequests.length">
+        <div *ngFor="let reqItem of rejectedRequests" class="container" style="border: 3px solid red !important">
+          <h3>From User : {{ reqItem.from_user }}</h3>
+          <p>Message Received : {{ reqItem.message }}</p>
+        </div>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>
+

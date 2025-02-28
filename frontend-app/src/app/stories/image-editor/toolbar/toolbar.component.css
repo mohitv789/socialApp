@@ -1,0 +1,47 @@
+.toolbar-wrapper {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.icon-panel {
+  height: 10%;
+  min-height: 40px;
+  width: calc(100% - 8px);
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  margin: 8px;
+  border-bottom: 1px solid #dddbdb;
+}
+
+.icons {
+  color: #dddbdb;
+}
+
+.active-icon {
+  color: #69f0ae;
+}
+
+.spacer {
+  flex: 1;
+}
+
+.main-tool-slider {
+  height: 90%;
+  position: relative;
+  z-index: 9;
+  /* display: flex; */
+  /* flex-direction: column; */
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
+
+.main-tool-slider > * + * {
+  margin: 16px 15px 0px 0px;
+}
+
+.main-tool-slider button:nth-child(3n + 1) {
+  margin: 16px 15px 0px 15px;
+}

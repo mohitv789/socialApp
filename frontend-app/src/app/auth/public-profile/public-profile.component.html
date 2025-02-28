@@ -1,0 +1,55 @@
+<div class="container">
+  <div class="row">
+    <div class="row" style="margin: 10px auto;">
+      <h3 style="text-align: center;margin: 10px auto;" *ngIf="loggedInUserId!=userId">{{fullName}}'s Public Profile</h3>
+      <h3 style="text-align: center;margin: 10px auto;" *ngIf="loggedInUserId==userId">Your Public Profile</h3>
+    </div>
+    <div class="row" *ngIf="loggedInUserId!=userId">
+      <div class="row" style="margin: 10px auto;">
+        <button *ngIf="!showAddFriendButton" class="btn btn-primary float-end" (click)="viewFriend()">View Friend</button>
+        <div *ngIf="showAddFriendButton && !(!!pendingAddFriendButton || !!rejectedOnSent || !!rejectedOnReceived)" class="container">
+          <form [formGroup]="form" class="example-form">
+            <mat-form-field class="example-full-width">
+              <mat-label for="message_field">Friend Request Message</mat-label>
+              <input matInput type="text" formControlName="message_field" value="Message">
+            </mat-form-field>
+            <button
+              style="margin:10px auto;"
+              type="button"
+              class="btn btn-primary float-end"
+              (click)="addFriend(form.value)">Add Friend</button>
+          </form>
+        </div>
+      </div>
+      <div class="row" *ngIf="!!pendingAddFriendButton || !!rejectedOnSent || !!rejectedOnReceived" style="margin: -15px auto;">
+        <p class="text-messages-1" *ngIf="!!pendingAddFriendButton && !rejectedOnSent && !rejectedOnReceived">Request Pending</p>
+        <p class="text-messages-2" *ngIf="rejectedOnSent && !rejectedOnReceived">Sent Request Rejected on {{rejectedOnSent}}</p>
+        <p class="text-messages-2" *ngIf="rejectedOnReceived && !rejectedOnSent">Received Request Rejected on {{rejectedOnReceived}}</p>
+      </div>
+    </div>
+  </div>
+  <hr *ngIf="!showAddFriendButton">
+  <div class="spacer"></div>
+  <div *ngIf="!!canShow" class="row">
+    <div class="container2 col-md-4">
+      <img [src]="'http://localhost:8000' + profile.avatar" alt="{{ fullName }}" class="circular_image">
+    </div>
+    <div class="col-md-2"></div>
+    <div class="container4 col-md-6">
+      <div class="row">
+        <p>Name : {{ fullName }}</p>
+        <p>Status : {{ profile.status }}</p>
+        <p>Bio : {{ profile.bio }}</p>
+        <p>URL : {{ profile.url }}</p>
+        <p>Gender : {{ profile.gender }}</p>
+        <p>City : {{ profile.city }}</p>
+      </div>
+
+    </div>
+  </div>
+  <hr *ngIf="!showAddFriendButton">
+  <div *ngIf="!canShow" class="row">
+    <h2>User has not filled in his profile!!</h2>
+  </div>
+
+</div>

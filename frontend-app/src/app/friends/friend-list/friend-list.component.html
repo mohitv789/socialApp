@@ -1,0 +1,6 @@
+<div class="friend-list"  *ngIf="(friends$ | async) as friends">
+  <app-friend-item
+  *ngFor="let friendEl of friends; let i = index"
+  [friend]="friendEl"
+  [index]="i"></app-friend-item>
+</div>

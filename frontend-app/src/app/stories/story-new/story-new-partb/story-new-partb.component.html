@@ -1,0 +1,46 @@
+<h3>Add Reels</h3>
+
+<div [formGroup]="storyDetailForm" enctype="multipart/form-data">
+
+    <ng-container formArrayName="reels">
+
+        <ng-container *ngFor="let reelForm of reels.controls; let i = index">
+
+            <div [formGroupName]="i">
+
+              <div class="row">
+                <div class="col-xs-12">
+                  <div class="form-group">
+                      <h3>{{reelForm.get('caption')!.value}}</h3>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-8">
+                  <img [src]="reelForm.get('image')!.value" class="img-responsive" style="max-width: 600px;">
+                </div>
+                <div class="col-md-4">
+                  <div class="row">
+
+                    <div class="col-md-6">
+                      <mat-icon class="delete-btn float-end" (click)="deleteReel(i)">delete_forever</mat-icon>
+                    </div>
+                    <div class="col-md-6">
+                      <mat-icon class="edit-btn float-end" (click)="onEdit(i)">edit</mat-icon>
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+
+            </div>
+
+        </ng-container>
+
+    </ng-container>
+
+    <button class="edit-btn" (click)="addReel()">
+        <mat-icon >add</mat-icon>
+    </button>
+
+</div>

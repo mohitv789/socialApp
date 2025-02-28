@@ -1,0 +1,19 @@
+<div class="container"  *ngIf="(stories$ | async) as stories">
+  <app-story-item
+  *ngFor="let storyEl of stories; let i = index"
+  [story]="storyEl"
+  [index]="i"></app-story-item>
+</div>
+
+
+<!-- <mat-grid-list cols="3" class="container" *ngIf="(stories$ | async) as stories">
+  <mat-grid-tile>
+    <app-story-item
+      *ngFor="let storyEl of stories; let i = index"
+      [colspan]="tile[i].cols"
+      [rowspan]="tile.rows"
+      [story]="storyEl"
+      [index]="i">
+    </app-story-item>
+  </mat-grid-tile>
+</mat-grid-list> -->

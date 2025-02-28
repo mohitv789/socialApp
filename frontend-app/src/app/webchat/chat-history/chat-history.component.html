@@ -1,0 +1,7 @@
+<div class="container" *ngFor="let item of channel_chats">
+  <div class="row" style="border:1px solid; margin: 10px;padding: 10px;">
+    <p>{{item.user}} messaged on {{item.timestamp | date:'medium'}}</p>
+    <p>{{item.msg}}</p>
+  </div>
+</div>
+

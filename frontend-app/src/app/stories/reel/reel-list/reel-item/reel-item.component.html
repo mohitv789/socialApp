@@ -1,0 +1,19 @@
+<div class="card" *ngIf="!!reel">
+  <div class="row">
+    <p class="titlebox">Caption : <strong>{{ reel.caption }}</strong></p>
+  </div>
+
+  <div class="card-body row">
+    <div class="col-md-6">
+      <img class="img-thumbnail rounded mx-auto d-block" style="height:200px; border-radius: 5px;" [src]="reel.image" alt="reel.caption">
+    </div>
+    <div class="col-md-6" style="display: flex;">
+      <a class="btn btn-primary" style="margin: auto auto;" (click)="goToReelDetail(reel.id)">Reel Detail</a>
+    </div>
+  </div>
+
+  <div class="card-footer">
+    <p class="float-start text-muted mb-0">{{ commentNumbers }} Comments</p>
+    <p class="float-end text-muted mb-0">{{ totalLikes }} Likes, {{ totalLoves }} Loves and {{ totalCelebrates }} Celebrations</p>
+  </div>
+</div>

@@ -1,0 +1,53 @@
+
+<h2 style="text-align: center; background-color: #a0c9d5; border-bottom-left-radius: 5px; border-bottom-right-radius: 5px;padding: 10px;">New Comment</h2>
+
+<mat-dialog-content>
+
+  <ng-container *ngIf="commentForm">
+
+    <ng-container [formGroup]="commentForm">
+
+      <div class="row">
+        <div class="col-md-12">
+          <div class="form-group">
+            <label style="padding: 10px;" for="reelcomment">Comment</label>
+            <input
+              style="padding: 10px;"
+              type="text"
+              id="reelcomment"
+              formControlName="reelcomment"
+              class="form-control">
+          </div>
+        </div>
+      </div>
+
+    </ng-container>
+
+
+  </ng-container>
+
+</mat-dialog-content>
+
+<mat-dialog-actions>
+
+  <div class="row" style="margin: 10px auto; padding:10px;">
+    <div class="col-md-6">
+      <button class="btn btn-primary float-start" (click)="onClose()">
+        Cancel
+      </button>
+
+    </div>
+
+    <div class="col-md-6">
+      <button class="btn btn-primary float-end" (click)="onSave()">
+        Post Comment
+      </button>
+
+    </div>
+  </div>
+
+</mat-dialog-actions>
+
+
+
+

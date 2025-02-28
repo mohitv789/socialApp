@@ -1,0 +1,9 @@
+
+<div class="row"  *ngIf="persReels">
+  <app-reel-item
+  *ngFor="let reelEl of persReels; let i = index"
+  [reel]="reelEl"
+  [index]="i"></app-reel-item>
+</div>
+
+

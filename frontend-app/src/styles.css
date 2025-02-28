@@ -1,0 +1,126 @@
+/* You can add global styles to this file, and also import other style files */
+
+html, body { height: 100%; }
+body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+
+.backdropBackground {
+  filter: blur(5px);
+  background-color: black;
+  opacity: 0.5 !important;
+}
+
+.custom-modalbox {
+  mat-dialog-container {
+    margin: 20px auto;
+    padding: 20px auto;
+    justify-content: center;
+    max-width: 800px;
+  }
+
+  .btn {
+    border: 3px solid;
+    border-image-slice: 1;
+    background-color: #a0c9d5;
+    -webkit-text-fill-color: black !important;
+    text-decoration: none;
+    color: black !important;
+    width: 150px;
+  }
+
+  .btn:hover, .btn:focus {
+    -webkit-text-fill-color: black !important;
+    border: 3px solid #0c527b !important;
+    box-shadow: #0c2b57 1px 0 10px;
+    text-decoration: underline;
+    width: 150px;
+  }
+
+  .buttonrow {
+    margin: 20px auto;
+    padding: 20px auto;
+  }
+
+  .row {
+    margin: 20px auto;
+  }
+
+  .imagerow {
+    margin: 10px auto;
+  }
+  .imagerow > img {
+    width: 250px;
+    height: 250px;
+    overflow: hidden;
+    background-color: #a0c9d5;
+    display:block;
+    margin:auto;
+  }
+  .custom-dialogbox {
+    mat-dialog-container {
+      margin: 20px auto;
+      padding: 20px auto;
+      justify-content: center;
+      max-width: 800px;
+    }
+    .btn {
+      border: 3px solid;
+      border-image-slice: 1;
+      background-color: #575858;
+      -webkit-text-fill-color: black !important;
+      text-decoration: none;
+      color: black !important;
+      width: 150px;
+    }
+
+    .btn:hover, .btn:focus {
+      -webkit-text-fill-color: black !important;
+      border: 3px solid #0c527b !important;
+      box-shadow: #0c2b57 1px 0 10px;
+      text-decoration: underline;
+      width: 150px;
+    }
+
+    .buttonrow {
+      margin: 20px auto;
+      padding: 20px auto;
+    }
+
+    .row {
+      margin: 20px auto;
+    }
+  }
+  .custom-friendbox {
+    mat-dialog-container {
+      margin: 20px auto;
+      padding: 20px auto;
+      justify-content: center;
+      max-width: 800px;
+    }
+    .btn {
+      border: 3px solid;
+      border-image-slice: 1;
+      background-color: #a0c9d5;
+      -webkit-text-fill-color: black !important;
+      text-decoration: none;
+      color: black !important;
+      width: 150px;
+    }
+
+    .btn:hover, .btn:focus {
+      -webkit-text-fill-color: black !important;
+      border: 3px solid #0c527b !important;
+      box-shadow: #0c2b57 1px 0 10px;
+      text-decoration: underline;
+      width: 150px;
+    }
+
+    .buttonrow {
+      margin: 20px auto;
+      padding: 20px auto;
+    }
+
+    .row {
+      margin: 20px auto;
+    }
+  }
+}

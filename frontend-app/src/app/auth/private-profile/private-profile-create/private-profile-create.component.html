@@ -1,0 +1,113 @@
+
+<h2 style="text-align: center; background-color: #a0c9d5; border-bottom-left-radius: 5px; border-bottom-right-radius: 5px;padding: 10px;">New Profile Creation</h2>
+
+<mat-dialog-content>
+
+  <ng-container *ngIf="profileForm">
+
+    <ng-container [formGroup]="profileForm"  enctype="multipart/form-data">
+
+      <div class="row">
+        <div class="col-md-12">
+          <div class="form-group">
+            <label for="status">Status</label>
+            <input
+              type="text"
+              id="status"
+              formControlName="status"
+              class="form-control">
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <div class="form-group">
+            <label for="bio">Bio</label>
+            <input
+              type="text"
+              id="bio"
+              formControlName="bio"
+              class="form-control">
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <div class="form-group">
+            <label for="gender">Gender</label>
+            <input
+              type="text"
+              id="gender"
+              formControlName="gender"
+              class="form-control">
+          </div>
+        </div>
+      </div>
+      <div *ngIf="!!imageUrl" class="row">
+        <div class="col-xs-12 imagerow">
+          <img [src]="imageUrl" style="max-width: 200px;">
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-xs-12">
+          <div class="form-group">
+
+            <input type="file" (change)="onFileSelected($event)" accept="image/*" />
+
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col-md-12">
+          <div class="form-group">
+            <label for="city">City</label>
+            <input
+              type="text"
+              id="city"
+              formControlName="city"
+              class="form-control">
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-12">
+          <div class="form-group">
+            <label for="url">URL</label>
+            <input
+              type="text"
+              id="url"
+              formControlName="url"
+              class="form-control">
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+
+  </ng-container>
+
+</mat-dialog-content>
+
+<mat-dialog-actions>
+  <div class="buttonrow row">
+    <div class="col-md-6">
+      <button class="btn btn-primary float-start" (click)="onSave()">
+        Add Profile
+      </button>
+
+    </div>
+    <div class="col-md-6">
+      <button class="btn btn-primary float-end" (click)="onClose()">
+        Cancel
+      </button>
+    </div>
+
+  </div>
+
+
+</mat-dialog-actions>
+
+
+
+

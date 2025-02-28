@@ -1,0 +1,126 @@
+
+<div class="container" *ngIf="!!isAuth">
+  <div class="row mainrow">
+    <div class="col-md-6">
+      <h1 class="heading">{{ fullname | titlecase }}</h1>
+    </div>
+    <div class="col-md-6">
+      <button *ngIf="!!showProfileEdit" class="btn btn-primary float-start" (click)="yourPublicProfile()">
+        See Public Profile
+      </button>
+      <button *ngIf="!!showProfileAdd" class="btn btn-primary float-end" (click)="addProfile()">
+        Add Your Profile
+      </button>
+      <button *ngIf="!!showProfileEdit" class="btn btn-primary float-end" (click)="onEditProfile()">
+        Edit Your Profile
+      </button>
+    </div>
+  </div>
+  <div class="row profile-body" *ngIf="!!profileAvailable">
+    <div class="col-md-4">
+      <img [src]="profile.avatar" alt="{{ fullname }}" class="avatar card-img-top img-fluid">
+    </div>
+    <div class="col-md-2"></div>
+    <div class="col-md-6">
+      <div class="row">
+        <p><strong>Status : </strong>{{ profile.status }}</p>
+      </div>
+      <div class="row">
+        <h3> {{ emailId }}</h3>
+        <p>{{ profile.bio }}</p>
+        <p>{{ profile.url }}</p>
+        <p>{{ profile.gender }}</p>
+        <p>{{ profile.city }}</p>
+      </div>
+    </div>
+    <hr class="heading" *ngIf="!!profileAvailable">
+    <div class="row feed-container">
+      <div class="col-md-5">
+        <div class="row">
+          <div class="col-md-12 friends" *ngIf="!!pendingRequests.length">
+            <h2 class="heading">Pending Friend Requests</h2>
+            <hr class="heading">
+            <div class="friend-card" *ngFor="let requestItem of pendingRequests">
+              <h3 class="heading">Request From : {{requestItem.from_user}}</h3>
+              <p class="heading">Request Message : {{requestItem.message}}</p>
+              <div class="row">
+                <div class="col-md-6">
+                  <button class="btn btn-primary float-start" (click)="acceptRequest(requestItem.id)">Accept Friend</button>
+                </div>
+                <div class="col-md-6">
+                  <button class="btn btn-primary float-end" (click)="rejectRequest(requestItem.id)">Reject Request</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="row" *ngIf="!!friends.length">
+          <div class="friends">
+            <h2 class="heading">Friend List</h2>
+            <hr class="heading">
+            <div class="friend-card" *ngFor="let friendItem of friends">
+              <h3 class="heading" style="text-align: center;">{{friendItem.first_name}} {{friendItem.last_name}}</h3>
+              <div class="row">
+                <div class="col-md-6">
+                  <button class="btn btn-primary float-start" (click)="goToFriendDetail(friendItem.id)">View Friend</button></div>
+                <div class="col-md-6">
+                  <button class="btn btn-primary float-end" (click)="removeFriend(friendItem.id)">Remove Friend</button></div>
+              </div>
+            </div>
+          </div>
+          <div *ngIf="!friends" class="friends">
+            <h3>You have not made any friends yet!</h3>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-1"></div>
+      <div class="col-md-6" *ngIf="!!s_activity.length || !!r_activity.length">
+        <div class="activities">
+          <h2 class="heading">Activity on your stories</h2>
+          <hr class="heading">
+          <div class="feed-item" *ngFor="let s_item of s_activity">
+            <p style="margin: auto;"><a style="cursor: pointer;color: #6c757d;" (click)="goToPublicProfile(s_item.activityUserID)">{{ s_item.activityUser }}</a> has {{ s_item.action }} on your story <a style="cursor: pointer;color: #6c757d;" (click)="goToStoryDetail(s_item.story.id)">{{ s_item.story.title }}</a></p>
+          </div>
+          <div class="feed-item" *ngFor="let r_item of r_activity">
+            <p style="margin: auto;"><a style="cursor: pointer;color: #6c757d;" (click)="goToPublicProfile(r_item.activityUserID)">{{ r_item.activityUser }}</a> has {{ r_item.action }} on your reel <a style="cursor: pointer;color: #6c757d;" (click)="goToReelDetail(r_item.reel.id)">{{ r_item.reel.caption }}</a></p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <hr class="heading">
+  <div class="photo-carousal" *ngIf="!!profileAvailable">
+    <app-photo-carousal></app-photo-carousal>
+  </div>
+
+  <hr class="heading">
+  <div class="row photo-carousal">
+    <div class="col-md-6" *ngIf="!!chatrooms">
+      <h2 style="text-align: center;">Chatrooms started by you</h2>
+      <div class="feed-item" style="text-align: center;" *ngFor="let chatroom of chatrooms">
+        <h3>Chatroom {{chatroom.chatroom_id}}</h3>
+        <p *ngIf="chatroom.chatroom_type == 'story'">Chatroom on story <a style="cursor: pointer;color: #6c757d;" (click)="gotoStoryFeed(chatroom.chatroom_object_id)">{{chatroom.chatroom_object_title | titlecase}}</a></p>
+        <p *ngIf="chatroom.chatroom_type == 'reel'">Chatroom on reel <a style="cursor: pointer;color: #6c757d;" (click)="gotoReelFeed(chatroom.chatroom_object_id)">{{chatroom.chatroom_object_title | titlecase}}</a></p>
+        <button class="btn btn-primary" (click)="goToChatroom(chatroom)">View Chatroom</button>
+      </div>
+    </div>
+
+    <div class="col-md-6" *ngIf="!!related_chatrooms">
+      <h2 style="text-align: center;">Chatrooms on your stories and reels</h2>
+      <div class="feed-item" style="text-align: center;" *ngFor="let chatroom of related_chatrooms">
+        <h3>Chatroom {{chatroom.chatroom_id}}</h3>
+        <p *ngIf="chatroom.chatroom_type == 'story'">Chatroom on story <a style="cursor: pointer;color: #6c757d;" (click)="gotoStoryDetail(chatroom.chatroom_object_id)">{{chatroom.chatroom_object_title | titlecase}}</a></p>
+        <p *ngIf="chatroom.chatroom_type == 'reel'">Chatroom on reel <a style="cursor: pointer;color: #6c757d;" (click)="gotoReelDetail(chatroom.chatroom_object_id,chatroom.chatroom_object_parent)">{{chatroom.chatroom_object_title | titlecase}}</a></p>
+        <button class="btn btn-primary" (click)="goToChatroom(chatroom)">View Chatroom</button>
+      </div>
+    </div>
+  </div>
+
+
+
+</div>
+
+

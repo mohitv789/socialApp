@@ -1,0 +1,57 @@
+
+<div class="data-form">
+
+  <h1 class="heading">Edit Story</h1>
+
+    <mat-horizontal-stepper #stepper="matHorizontalStepper"
+                            class="mat-elevation-z5" labelPosition="bottom">
+
+        <mat-step [stepControl]="step1.storyStartForm" errorMessage="Story page in error">
+
+          <app-story-edit-parta #step1></app-story-edit-parta>
+            <ng-template matStepLabel>Story Details</ng-template>
+            <div class="row">
+              <div class="col-md-6 stepper-buttons">
+                <button type="button" class="btn btn-primary float-start" (click)="onCancel()">Cancel</button>
+              </div>
+              <div class="col-md-6 stepper-buttons" *ngIf="!!step1.storyStartForm">
+                <button class="btn btn-primary float-end" matStepperNext >Next</button>
+              </div>
+            </div>
+
+
+
+        </mat-step>
+
+
+        <mat-step [stepControl]="step2.storyDetailForm" errorMessage="Reel Page in error">
+
+            <app-story-edit-partb #step2 [reelsData]="reelsData"></app-story-edit-partb>
+
+            <ng-template matStepLabel>Story Reels</ng-template>
+
+            <div class="stepper-buttons">
+
+                <button class="btn btn-primary float-start" matStepperPrevious>Back</button>
+
+                <button class="btn btn-primary float-end"  color="primary"
+                    [disabled]="!(step2.storyDetailForm.value.reels.length > 0)"
+                    (click)="submit(step1.storyStartForm.value, step2.storyDetailForm.value)">
+                    Edit Story
+                </button>
+
+            </div>
+
+
+        </mat-step>
+
+    </mat-horizontal-stepper>
+
+
+</div>
+
+
+<div class="scrolling-space">
+
+
+</div>

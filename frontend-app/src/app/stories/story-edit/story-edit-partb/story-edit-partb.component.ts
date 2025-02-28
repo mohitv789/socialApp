@@ -1,0 +1,112 @@
+  import { Component, Input, OnInit, ViewChild } from '@angular/core';
+  import { FormArray, FormBuilder, FormGroup } from '@angular/forms';
+  import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
+  import { ReelFileTransferService } from '../../services/reel-file-transfer.service';
+  import { ReelImageEditComponent } from '../../story-new/reel-image-edit/reel-image-edit.component';
+import { MatStepper } from '@angular/material/stepper';
+import { StoryNewReelComponent } from '../../story-new/story-new-reel/story-new-reel.component';
+import { ReelsHTTPService } from '../../services/reels.service';
+import { ReelEditComponent } from '../reel-edit/reel-edit.component';
+import { ImageEditorComponent } from '../../image-editor/image-editor.component';
+import { UtilService } from '../../image-editor/util.service';
+
+  @Component({
+    selector: 'app-story-edit-partb',
+    templateUrl: './story-edit-partb.component.html',
+    styleUrls: ['./story-edit-partb.component.css']
+  })
+  export class StoryEditPartbComponent implements OnInit {
+    storyDetailForm!: FormGroup;
+    @ViewChild(MatStepper) stepper!: MatStepper;
+    constructor(private fb:FormBuilder, private rService: ReelsHTTPService,
+      private dialog: MatDialog,private rfileTransferService: ReelFileTransferService,private utilService: UtilService) {
+        this.storyDetailForm = this.fb.group({
+          reels: this.fb.array([])
+        });
+
+    }
+    @Input() reelsData!:any[];
+
+    ngOnInit(): void {
+      setTimeout(() => {
+        if (this.reelsData) {
+          const reelsArray = this.storyDetailForm.get('reels') as FormArray;
+          this.reelsData.forEach(reel => {
+
+            reelsArray.push(this.fb.group({
+              id: reel.id,
+              caption: reel.caption,
+              image: reel.image
+            }));
+          });
+        }
+      }, 500);
+
+    }
+
+    get reels() {
+      return this.storyDetailForm.controls["reels"] as FormArray;
+    }
+
+    addReel() {
+
+      const dialogConfig = new MatDialogConfig();
+      dialogConfig.autoFocus = true;
+      dialogConfig.minWidth = "800px";
+      dialogConfig.disableClose = true;
+
+      this.dialog.open(StoryNewReelComponent, dialogConfig)
+        .afterClosed()
+        .subscribe(val => {
+          if (val) {
+            console.log(val);
+            const newReelGroup = this.fb.group({
+              id: [val.id],
+              caption: [val.caption],
+              image: [val.image]
+            });
+            this.reels.push(newReelGroup);
+          }
+      });
+    }
+
+    deleteReel(sectionIndex: number) {
+      const reelId = this.reels.controls[sectionIndex].value.id;
+      this.rService.deleteReel(reelId).subscribe(() => {
+        this.reels.removeAt(sectionIndex);
+      })
+
+    }
+    clearReels() {
+      while (this.reels.length > 0) {
+        this.reels.removeAt(0);
+      }
+    }
+    onEdit(sectionIndex: number) {
+      console.log(this.reels.value[sectionIndex]);
+      const dialogConfig = new MatDialogConfig();
+      dialogConfig.autoFocus = true;
+      dialogConfig.minWidth = "1200px";
+      dialogConfig.disableClose = true;
+      if (!this.reels.value[sectionIndex]["image"].split(":")[0]) {
+        this.reels.value[sectionIndex]["image"] = "http://localhost:8000/" + this.reels.value[sectionIndex]["image"];
+      }
+      dialogConfig.data = {
+        id: this.reels.value[sectionIndex]["id"],
+        image: this.reels.value[sectionIndex]["image"],
+        caption: this.reels.value[sectionIndex]["caption"]
+      }
+      this.dialog.open(ImageEditorComponent, dialogConfig)
+        .afterClosed()
+        .subscribe(val => {
+          if (val) {
+            console.log(val);
+
+            this.reels.at(sectionIndex).patchValue({
+              image: "http://localhost:8000/" + val["image"],
+              caption: val["caption"]
+            });
+          }
+      });
+    }
+  }

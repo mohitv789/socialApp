@@ -1,0 +1,60 @@
+<div class="container" *ngIf="!!isAuth">
+  <div class="row" *ngIf="!!profile">
+    <div class="mainrow" style="padding: 0px;">
+      <div class="col-md-4 float-start">
+        <img [src]="'http://localhost:8000' + profile.avatar" alt="{{ fullName }}" class="avatar card-img-top img-fluid">
+      </div>
+      <div class="col-md-1"></div>
+      <div class="col-md-7 float-end">
+        <div class="row">
+          <button style="margin: 10px auto;" class="btn btn-primary" (click)="removeFriend()">Remove Friend</button>
+        </div>
+        <div class="row">
+          <p class="heading"><strong>Status : </strong>{{ profile.status }}</p>
+        </div>
+        <div class="row">
+          <h3>{{ fullName }}</h3>
+          <p>{{ profile.bio }}</p>
+          <p>{{ profile.url }}</p>
+          <p>{{ profile.gender }}</p>
+          <p>{{ profile.city }}</p>
+        </div>
+        <div class="row">
+          <div class="row" *ngIf="!!isFollower || !!isFollowing">
+            <div class="col-md-6">
+              <h3 *ngIf="!!isFollower">{{ fullName }} is Following You</h3>
+              <h3 *ngIf="!isFollower">{{ fullName }} is not Following You</h3>
+            </div>
+            <div class="col-md-6">
+              <h3 *ngIf="!!isFollowing">You are follwing {{ fullName }}</h3>
+              <h3 *ngIf="!isFollowing">You are not follwing {{ fullName }}</h3>
+            </div>
+          </div>
+          <div class="row" *ngIf="!!isBlocked || !!isBlocking">
+            <div class="col-md-6">
+              <h3 *ngIf="!!isBlocked">You have blocked {{ fullName }}</h3>
+              <h3 *ngIf="!isBlocked">You have not blocked {{ fullName }}</h3>
+            </div>
+            <div class="col-md-6">
+              <h3 *ngIf="!!isBlocking">{{ fullName }} has blocked you</h3>
+              <h3 *ngIf="!isBlocking">{{ fullName }} has not blocked you</h3>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="activities" *ngIf="!!storyFeed.length">
+      <h3 style="text-align: center; padding: 10px auto; margin: 10px auto;">Activity by your friend {{fullName}}</h3>
+      <hr>
+      <div class="col-md-12">
+        <div class="row feed-item" *ngFor="let data of storyFeed">
+          <p style="margin: auto;">{{ fullName }} has {{ data.action }} <a style="cursor: pointer;color: #6c757d;" (click)="goToStoryDetail(data.story.id)">{{ data.story.title }}</a></p>
+        </div>
+        <div class="row feed-item" *ngFor="let data of reelFeed">
+          <p style="margin: auto;">{{ fullName }} has {{ data.action }} <a style="cursor: pointer;color: #6c757d;" (click)="goToReelDetail(data.reel.id)">{{ data.reel.caption }}</a></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,40 @@
+.container {
+  margin: 10px auto;
+  padding: 20px auto;
+  justify-content: center;
+  width: 800px;
+}
+
+.btn {
+  border: 3px solid;
+  margin: 5px;
+  border-image-slice: 1;
+  background-color: #a0c9d5;
+  -webkit-text-fill-color: black !important;
+  text-decoration: none;
+  color: black !important;
+}
+
+.btn:hover, .btn:focus {
+  -webkit-text-fill-color: black !important;
+  margin: 5px;
+  border: 3px solid #0c527b !important;
+  box-shadow: #0c2b57 1px 0 10px;
+  text-decoration: underline;
+}
+
+.mainrow {
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 100%;
+  margin: 20px auto;
+}
+
+.commentrow {
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 100%;
+  padding-right: calc(var(--bs-gutter-x) * .5);
+  padding-left: calc(var(--bs-gutter-x) * .5);
+  margin-top: var(--bs-gutter-y);
+}

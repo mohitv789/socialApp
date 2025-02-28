@@ -1,0 +1,9 @@
+<div class="container" *ngIf="!!story">
+  <h3 style="text-align: center; background-color: #a0c9d5; border-radius: 5px; padding: 10px; margin-top: 20px; border: 2px solid black;">Reels for <strong>{{story.title}}</strong></h3>
+  <app-reel-item
+    *ngFor="let reelEl of reels; let i = index"
+    [reel]="reelEl"
+    [index]="i"></app-reel-item>
+</div>
+
+

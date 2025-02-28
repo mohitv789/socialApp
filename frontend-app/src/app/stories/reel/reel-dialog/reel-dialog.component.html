@@ -1,0 +1,27 @@
+<!--
+<h2 style="text-align: center; background-color: #a0c9d5; padding: 10px 0;">Story Reels</h2>
+
+<mat-dialog-content>
+  <div class="slideshow" style="max-width: 800px; max-height: 600px; text-align:center;">
+    <ng-image-slider
+      [showArrow]="true"
+      [imagePopup]="true"
+      [manageImageRatio]="true"
+      [images]="images"
+      [imageSize]="{width: '100%', height: 500}">
+    </ng-image-slider>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions >
+  <div class="row" >
+    <button mat-button class="btn btn-primary float-end" (click)="onClose()">
+      Cancel
+    </button>
+
+  </div>
+</mat-dialog-actions>
+
+ -->
+ <ngx-gallery *ngIf="galleryImages" [options]="galleryOptions" [images]="galleryImages" class="ngx-gallery"></ngx-gallery>
+ <h3 *ngIf="!galleryImages">This story doesn't have any reels!</h3>
