@@ -48,7 +48,7 @@ export class StoryItemComponent implements OnInit{
   goToReelList(storyId: string) {
     // this.router.navigateByUrl('/reel/story/' + storyId);
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = true;
+    dialogConfig.autoFocus = false;
     dialogConfig.data = this.reels;
     dialogConfig.backdropClass = 'backdropBackground';
     this.dialog.open(ReelDialogComponent, dialogConfig);

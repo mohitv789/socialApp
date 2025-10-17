@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { AfterViewInit, Component, Inject, OnInit } from '@angular/core';
 import { MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { NgxGalleryAnimation, NgxGalleryImage, NgxGalleryOptions } from '@kolkov/ngx-gallery';
 
@@ -7,7 +7,7 @@ import { NgxGalleryAnimation, NgxGalleryImage, NgxGalleryOptions } from '@kolkov
   templateUrl: './reel-dialog.component.html',
   styleUrls: ['./reel-dialog.component.css']
 })
-export class ReelDialogComponent implements OnInit{
+export class ReelDialogComponent implements OnInit, AfterViewInit{
   startIndex = 0;
   galleryOptions: NgxGalleryOptions[] = [];
   galleryImages: NgxGalleryImage[] = [];
@@ -42,7 +42,11 @@ export class ReelDialogComponent implements OnInit{
       this.galleryImages.push({small : data.image,medium: data.image, big: data.image,description: data.caption})
     })
   }
-
+  show = false;
+  ngAfterViewInit() {
+    // let Angular finish attaching the view
+    setTimeout(() => this.show = true, 0);
+  }
   onClose() {
     this.dialogRef.close();
   }

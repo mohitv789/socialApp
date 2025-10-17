@@ -5,7 +5,7 @@ import {HttpClient} from "@angular/common/http";
   providedIn: 'root'
 })
 export class ForgotService {
-  apiUrl = "http://localhost:8000/a"
+  apiUrl = "http://localhost:4500/a"
   constructor(private http: HttpClient) {
   }
 

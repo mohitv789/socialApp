@@ -100,7 +100,7 @@ export class UtilService {
   editUserImage(reelId: string, image: any) {
 
     return this.http.put<any>(
-      "http://localhost:8000/story/reels/" + reelId + "/edit-image/",
+      "http://localhost:4500/story/reels/" + reelId + "/edit-image/",
       image,
       {withCredentials: true})
   }

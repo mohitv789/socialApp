@@ -8,11 +8,11 @@
       <h3>{{ story.title }}</h3>
       <p>{{ story.description }}</p>
       <p>{{ story.longDescription }}</p>
-      <img [src]="'http://localhost:8000' + story.image" alt="{{ story.title }}" class="card-img-top img-fluid">
+      <img [src]="'http://localhost:4500' + story.image" alt="{{ story.title }}" class="card-img-top img-fluid">
       <div *ngFor="let tag of story.tags">
         <h5>TAG : {{ tag.name }}</h5>
       </div>
-      <p *ngIf="!!profile">Published by <img class="circular_image" [src]="'http://localhost:8000'+ profile.avatar" alt="Profile Image" style="margin-right:5px;">
+      <p *ngIf="!!profile">Published by <img class="circular_image" [src]="'http://localhost:4500'+ profile.avatar" alt="Profile Image" style="margin-right:5px;">
         <a style="color:#2292b7; vertical-align: middle; margin: 0 10px !important;" [routerLink]="['/profile/' + story.owner]">{{ fullName }}
         </a>
       </p>

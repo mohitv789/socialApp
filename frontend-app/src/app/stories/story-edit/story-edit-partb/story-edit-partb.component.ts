@@ -51,7 +51,7 @@ import { UtilService } from '../../image-editor/util.service';
     addReel() {
 
       const dialogConfig = new MatDialogConfig();
-      dialogConfig.autoFocus = true;
+      dialogConfig.autoFocus = false;
       dialogConfig.minWidth = "800px";
       dialogConfig.disableClose = true;
 
@@ -85,11 +85,11 @@ import { UtilService } from '../../image-editor/util.service';
     onEdit(sectionIndex: number) {
       console.log(this.reels.value[sectionIndex]);
       const dialogConfig = new MatDialogConfig();
-      dialogConfig.autoFocus = true;
+      dialogConfig.autoFocus = false;
       dialogConfig.minWidth = "1200px";
       dialogConfig.disableClose = true;
       if (!this.reels.value[sectionIndex]["image"].split(":")[0]) {
-        this.reels.value[sectionIndex]["image"] = "http://localhost:8000/" + this.reels.value[sectionIndex]["image"];
+        this.reels.value[sectionIndex]["image"] = "http://localhost:4500/" + this.reels.value[sectionIndex]["image"];
       }
       dialogConfig.data = {
         id: this.reels.value[sectionIndex]["id"],
@@ -103,7 +103,7 @@ import { UtilService } from '../../image-editor/util.service';
             console.log(val);
 
             this.reels.at(sectionIndex).patchValue({
-              image: "http://localhost:8000/" + val["image"],
+              image: "http://localhost:4500/" + val["image"],
               caption: val["caption"]
             });
           }

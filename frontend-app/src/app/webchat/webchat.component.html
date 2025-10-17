@@ -1,7 +1,7 @@
 <div class="container">
   <div class="row parent">
     <h2>This Chatroom is about {{chatroom_obj}} "{{chatroom_title}}" from user {{fullName}}.</h2>
-    <img style="max-width: 400px;max-height: 400px;" [src]="'http://localhost:8000' + image" alt="{{ chatroom_title }}" class="card-img-top img-fluid">
+    <img style="max-width: 400px;max-height: 400px;" [src]="'http://localhost:4500' + image" alt="{{ chatroom_title }}" class="card-img-top img-fluid">
   </div>
   <div class="row parent" *ngIf="!chatroom_deleted">
     <h3 style="border-bottom: 1px solid black;">This chatroom has been started by <a [routerLink]="['/profile/' + chatroom_owner]">{{chatroom_owner_name}}</a>.</h3>

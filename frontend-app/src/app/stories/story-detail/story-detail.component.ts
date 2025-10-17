@@ -65,7 +65,7 @@ export class StoryDetailComponent implements OnInit{
 
   showReels() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = true;
+    dialogConfig.autoFocus = false;
     dialogConfig.minWidth = "800px";
     dialogConfig.panelClass = 'custom-modalbox';
     dialogConfig.disableClose = true;
@@ -76,7 +76,7 @@ export class StoryDetailComponent implements OnInit{
 
   addComment() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = true;
+    dialogConfig.autoFocus = false;
     dialogConfig.minWidth = "800px";
     dialogConfig.disableClose = true;
     this.friends$.subscribe((friendList: any) => {
@@ -127,7 +127,7 @@ export class StoryDetailComponent implements OnInit{
   }
   showReactionInfo() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = true;
+    dialogConfig.autoFocus = false;
     dialogConfig.minWidth = "800px";
     dialogConfig.minHeight = "600px";
     dialogConfig.panelClass = 'custom-dialogbox';

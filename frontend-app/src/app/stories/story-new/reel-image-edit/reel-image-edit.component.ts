@@ -105,7 +105,7 @@ export class ReelImageEditComponent implements OnInit, AfterViewInit{
         if (!resp["image"].split(":")[0]) {
           console.log(resp["image"]);
 
-          resp["image"] = "http://localhost:8000/" + resp["image"];
+          resp["image"] = "http://localhost:4500/" + resp["image"];
         }
         this.dialogRef.close({image: resp["image"]});
         // console.log(resp);

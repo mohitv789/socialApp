@@ -1,5 +1,4 @@
 import { NgModule } from '@angular/core';
-import { BrowserModule } from '@angular/platform-browser';
 import { HttpClientModule } from '@angular/common/http';
 import { StoryListComponent } from './story-list/story-list.component';
 import { StoryItemComponent } from './story-list/story-item/story-item.component';
@@ -35,7 +34,6 @@ import { PushedReelDetailComponent } from './story-pushed/pushed-reel-detail/pus
 import { ReelCommentCreateComponent } from './reel-comment-create/reel-comment-create.component';
 import { ReelCommentItemComponent } from './reel-comment-item/reel-comment-item.component';
 import { ReactionInfoDialogComponent } from './reaction-info-dialog/reaction-info-dialog.component';
-import {NgFor} from '@angular/common';
 import {MatGridListModule} from '@angular/material/grid-list';
 import {  MatInputModule } from "@angular/material/input";
 import { ReelImageEditComponent } from './story-new/reel-image-edit/reel-image-edit.component';
@@ -49,12 +47,10 @@ import { ToolbarComponent } from './image-editor/toolbar/toolbar.component';
 import { FilterToolComponent } from './image-editor/toolbar/filter-tool/filter-tool.component';
 import { MainToolComponent } from './image-editor/toolbar/main-tool/main-tool.component';
 import {MatButtonModule} from '@angular/material/button';
-import {MatSliderModule} from '@angular/material/slider';
 import {MatTooltipModule} from '@angular/material/tooltip';
 import {MatSelectModule} from '@angular/material/select';
 import {MatSnackBarModule} from '@angular/material/snack-bar';
 import {MatMenuModule} from '@angular/material/menu';
-
 import { NgxGalleryModule } from '@kolkov/ngx-gallery';
 import { CropToolsComponent } from './image-editor/toolbar/crop-tools/crop-tools.component';
 import { TextToolsComponent } from './image-editor/toolbar/text-tools/text-tools.component';
@@ -99,7 +95,7 @@ import { SharedModule } from './shared.module';
     MainToolComponent,
     CropToolsComponent,
     TextToolsComponent,
-    ShapeMaskToolsComponent
+    ShapeMaskToolsComponent,
   ],
   imports: [
     CommonModule,
@@ -121,7 +117,6 @@ import { SharedModule } from './shared.module';
     MatIconModule,
     MatGridListModule,
     MatSelectModule,
-    MatSliderModule,
     MatTooltipModule,
     MatSnackBarModule,
     MatMenuModule,
@@ -142,7 +137,7 @@ import { SharedModule } from './shared.module';
     ReelDialogComponent,
     ReelListComponent,
     StoryNewPartaComponent,
-    StoryNewPartbComponent
+    StoryNewPartbComponent,
   ]
 })
 export class StoryModule { }

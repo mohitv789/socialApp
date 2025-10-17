@@ -64,7 +64,7 @@ export class ReelDetailComponent implements OnInit{
 
   addComment() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = true;
+    dialogConfig.autoFocus = false;
     dialogConfig.minWidth = "800px";
     dialogConfig.disableClose = true;
 
@@ -107,7 +107,7 @@ export class ReelDetailComponent implements OnInit{
   }
   showReactionInfo() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = true;
+    dialogConfig.autoFocus = false;
     dialogConfig.minWidth = "800px";
     dialogConfig.minHeight = "600px";
     dialogConfig.panelClass = 'custom-dialogbox';
@@ -152,11 +152,11 @@ export class ReelDetailComponent implements OnInit{
   }
   editReel() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = true;
+    dialogConfig.autoFocus = false;
     dialogConfig.minWidth = "1500px";
     dialogConfig.disableClose = true;
     if (!this.reelData["image"].split(":")[0]) {
-      this.reelData["image"] = "http://localhost:8000/" + this.reelData["image"];
+      this.reelData["image"] = "http://localhost:4500/" + this.reelData["image"];
     }
     dialogConfig.data = {
       id: this.reelData["id"],

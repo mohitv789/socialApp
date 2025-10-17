@@ -1,4 +1,4 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { AfterViewInit, Component, Input, OnInit } from '@angular/core';
 import { UtilService } from '../../util.service';
 
 @Component({
@@ -6,7 +6,7 @@ import { UtilService } from '../../util.service';
   templateUrl: './crop-tools.component.html',
   styleUrl: './crop-tools.component.css'
 })
-export class CropToolsComponent implements OnInit {
+export class CropToolsComponent implements AfterViewInit {
   @Input() selectedToolType:any;
 
   onCropCancel(){
@@ -18,7 +18,6 @@ export class CropToolsComponent implements OnInit {
   }
 
   constructor(private utilService:UtilService) { }
-
-  ngOnInit() {
-  }
+  showSliders = false;
+  ngAfterViewInit() { setTimeout(()=> this.showSliders = true, 0); }
 }

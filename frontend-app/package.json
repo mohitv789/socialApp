@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "scripts": {
     "ng": "ng",
-    "start": "ng serve",
+    "start": "ng serve --proxy-config proxy.conf.json",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test"
@@ -35,7 +35,6 @@
     "konva": "^9.0.2",
     "ng-image-slider": "^7.0.0",
     "ngx-color-picker": "^16.0.0",
-    "ngx-cookie-service": "^15.0.0",
     "qrcode": "^1.5.3",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
@@ -56,5 +55,9 @@
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.0.0",
     "typescript": "~5.2.2"
-  }
+  },
+  "overrides": {
+  "parse5": "7.1.2",
+  "entities": "4.5.0"
+}
 }

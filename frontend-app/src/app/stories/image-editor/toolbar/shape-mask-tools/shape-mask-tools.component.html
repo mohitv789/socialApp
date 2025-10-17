@@ -1,25 +1,43 @@
+<div [hidden]="!showSliders">
 <!-- shape type -->
 <mat-grid-list class="style-container" cols="3" rowHeight="48px">
   <mat-grid-tile>
-    <button matTooltip="Add Rectangle Mask" matTooltipPosition="above" mat-icon-button (click)="addShapeMask('RECTANGLE')"><i class="material-icons icons">crop_landscape</i></button>
+    <button matTooltip="Add Rectangle Mask" matTooltipPosition="above" mat-icon-button (click)="addShapeMask('RECTANGLE')">
+      <i class="material-icons icons">crop_landscape</i>
+    </button>
   </mat-grid-tile>
   <mat-grid-tile>
-    <button matTooltip="Add Circle Mask" matTooltipPosition="above" mat-icon-button (click)="addShapeMask('CIRCLE')"><i class="material-icons icons">panorama_fish_eye</i></button>
+    <button matTooltip="Add Circle Mask" matTooltipPosition="above" mat-icon-button (click)="addShapeMask('CIRCLE')">
+      <i class="material-icons icons">panorama_fish_eye</i>
+    </button>
   </mat-grid-tile>
   <mat-grid-tile>
-    <button matTooltip="Add Triangle Mask" matTooltipPosition="above" mat-icon-button (click)="addShapeMask('TRIANGLE')"><i class="material-icons icons">change_history</i></button>
+    <button matTooltip="Add Triangle Mask" matTooltipPosition="above" mat-icon-button (click)="addShapeMask('TRIANGLE')">
+      <i class="material-icons icons">change_history</i>
+    </button>
   </mat-grid-tile>
 </mat-grid-list>
 
 <!-- color and opacity picker -->
-<div class="picker-container" style="margin:12px 0px 0px 0px;">
-  <button  matTooltipPosition="above" [disabled]="!!isSelectionInactive" mat-icon-button [(colorPicker)]="color"
-    (colorPickerChange)="onUpdateShapeMask()" [cpWidth]="'196'" [cpDisableInput]="true" [cpPosition]="'bottom'" [cpPositionOffset]="'50%'"
-    [cpPositionRelativeToArrow]="true" [cpSaveClickOutside]="true">
-  <i [style.color]="color " class="material-icons icons">color_lens</i>
+<div class="picker-container" style="margin:12px 0 0 0;">
+  <button matTooltip="Text Color" matTooltipPosition="above" [disabled]="isSelectionInactive" mat-icon-button
+          [(colorPicker)]="color" (colorPickerChange)="onUpdateShapeMask()" [cpUseRootViewContainer]="true"
+          [cpWidth]="'196'" [cpDisableInput]="true" [cpPosition]="'bottom'" [cpPositionOffset]="'50%'"
+          [cpPositionRelativeToArrow]="true" [cpSaveClickOutside]="true">
+    <i [style.color]="color" class="material-icons icons">color_lens</i>
   </button>
-  <div class="slider-wrapper">
-    <mat-slider min="0" step="0.1" max="1" thumb-label="true" [(ngModel)]="opacity" (change)="onUpdateShapeMask()" class="slider" ngDefaultControl><input matSliderThumb></mat-slider>
+
+  <div class="slider-wrapper" style="margin-left: 8px;">
+    <my-slider-wrapper
+      [disabled]="isSelectionInactive"
+      [min]=0
+      [step]=0.1
+      [max]=1
+      [(ngModel)]="opacity"
+      name="opacity"
+      (change)="onUpdateShapeMask()"
+      class="slider">
+    </my-slider-wrapper>
   </div>
 </div>
 
@@ -29,7 +47,16 @@
     <i class="material-icons icons">layers</i>
   </div>
   <div class="slider-wrapper">
-    <mat-slider min="0" step="0.1" max="1" thumb-label="true" [(ngModel)]="shadowAmount" (change)="onUpdateShapeMask()" class="slider" ngDefaultControl><input matSliderThumb></mat-slider>
+    <my-slider-wrapper
+      [disabled]="isSelectionInactive"
+      [min]=0
+      [step]=0.1
+      [max]=1
+      [(ngModel)]="shadowAmount"
+      name="shadowAmount"
+      (change)="onUpdateShapeMask()"
+      class="slider">
+    </my-slider-wrapper>
   </div>
 </div>
 
@@ -39,26 +66,55 @@
     <i class="material-icons icons">grain</i>
   </div>
   <div class="slider-wrapper">
-    <mat-slider min="0" step="1" max="20" thumb-label="true" [(ngModel)]="shadowBlur" (change)="onUpdateShapeMask()" class="slider" ngDefaultControl><input matSliderThumb></mat-slider>
+    <my-slider-wrapper
+      [disabled]="isSelectionInactive"
+      [min]=0
+      [step]=1
+      [max]=20
+      [(ngModel)]="shadowBlur"
+      name="shadowBlur"
+      (change)="onUpdateShapeMask()"
+      class="slider">
+    </my-slider-wrapper>
   </div>
-</div>
+  </div>
 
-<!-- shadow offsetX picker -->
-<div class="picker-container">
-  <div matTooltip="Shadow Offset X" matTooltipPosition="above" class="non-interactive-icon-wrapper">
-    <i class="material-icons icons">border_bottom</i>
+  <!-- shadow offsetX picker -->
+  <div class="picker-container">
+    <div matTooltip="Shadow Offset X" matTooltipPosition="above" class="non-interactive-icon-wrapper">
+      <i class="material-icons icons">border_bottom</i>
+    </div>
+    <div class="slider-wrapper">
+      <my-slider-wrapper
+        [disabled]="isSelectionInactive"
+        [min]=-20
+        [step]=1
+        [max]=20
+        [(ngModel)]="shadowOffsetX"
+        name="shadowOffsetX"
+        (change)="onUpdateShapeMask()"
+        class="slider">
+      </my-slider-wrapper>
+    </div>
   </div>
-  <div class="slider-wrapper">
-    <mat-slider min="-20" step="1" max="20" thumb-label="true" [(ngModel)]="shadowOffsetX" (change)="onUpdateShapeMask()" class="slider" ngDefaultControl><input matSliderThumb></mat-slider>
-  </div>
-</div>
 
-<!-- shadow offsetY picker -->
-<div class="picker-container">
-  <div matTooltip="Shadow Offset Y" matTooltipPosition="above" class="non-interactive-icon-wrapper">
-    <i class="material-icons icons">border_right</i>
+  <!-- shadow offsetY picker -->
+  <div class="picker-container">
+    <div matTooltip="Shadow Offset Y" matTooltipPosition="above" class="non-interactive-icon-wrapper">
+      <i class="material-icons icons">border_right</i>
+    </div>
+    <div class="slider-wrapper">
+      <my-slider-wrapper
+        [disabled]="isSelectionInactive"
+        [min]=-20
+        [step]=0.8
+        [max]=20
+        [(ngModel)]="shadowOffsetY"
+        name="shadowOffsetY"
+        (change)="onUpdateShapeMask()"
+        class="slider">
+      </my-slider-wrapper>
+    </div>
   </div>
-  <div class="slider-wrapper">
-    <mat-slider min="-20" step="0.8" max="20" thumb-label="true" [(ngModel)]="shadowOffsetY" (change)="onUpdateShapeMask()" class="slider" ngDefaultControl><input matSliderThumb></mat-slider>
-  </div>
+
 </div>

@@ -1,9 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { Observable, merge } from 'rxjs';
-import { Story } from '../models/Story';
 import { StoryHTTPService } from '../services/stories.service';
-import { AuthService } from 'src/app/auth/services/auth.service';
-import { ActivatedRoute, Router } from '@angular/router';
 
 @Component({
   selector: 'app-story-pushed',

@@ -4,7 +4,7 @@
   <div class="row" *ngIf="(reel$ | async) as reel">
     <div class="mainrow">
       <h1 style="text-align: center; background-color: #a0c9d5; border-radius: 5px; padding: 10px;">Caption : {{ reel.caption }}</h1>
-      <img [src]="'http://localhost:8000' + reel.image" class="card-img-top img-fluid" style="max-width: 800px;">
+      <img [src]="'http://localhost:4500' + reel.image" class="card-img-top img-fluid" style="max-width: 800px;">
     </div>
 
     <div class="container">

@@ -36,6 +36,11 @@
             ],
             "scripts": [
               "./node_modules/bootstrap/dist/js/bootstrap.js"
+            ],
+            "allowedCommonJsDependencies": [
+              "qrcode",
+              "fabric",
+              "konva"
             ]
           },
           "configurations": {

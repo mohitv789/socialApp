@@ -71,7 +71,7 @@ export class PushedDetailComponent implements OnInit{
 
   addComment() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = true;
+    dialogConfig.autoFocus = false;
     dialogConfig.minWidth = "800px";
     dialogConfig.disableClose = true;
 
@@ -117,7 +117,7 @@ export class PushedDetailComponent implements OnInit{
 
   showReactionInfo() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = true;
+    dialogConfig.autoFocus = false;
     dialogConfig.minWidth = "800px";
     dialogConfig.minHeight = "600px";
     dialogConfig.panelClass = 'custom-dialogbox';
@@ -375,7 +375,7 @@ export class PushedDetailComponent implements OnInit{
   }
   createStoryChatRoom() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = true;
+    dialogConfig.autoFocus = false;
     dialogConfig.minWidth = "800px";
     dialogConfig.minHeight = "600px";
     dialogConfig.panelClass = 'custom-dialogbox';
@@ -424,7 +424,7 @@ export class PushedDetailComponent implements OnInit{
         this.showLeaveChatroom = true;
         this.canshowJoinChatroom = false;
         const dialogConfig = new MatDialogConfig();
-        dialogConfig.autoFocus = true;
+        dialogConfig.autoFocus = false;
         dialogConfig.minWidth = "800px";
         dialogConfig.minHeight = "600px";
         dialogConfig.panelClass = 'custom-dialogbox';

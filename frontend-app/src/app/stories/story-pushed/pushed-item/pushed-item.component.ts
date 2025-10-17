@@ -29,8 +29,8 @@ export class PushedItemComponent {
 
     this.story.reels.forEach((reelItem: Reel) => {
       this.reels.push({
-        image: 'http://localhost:8000' + reelItem.image,
-        thumbImage: 'http://localhost:8000' + reelItem.image,
+        image: 'http://localhost:4500' + reelItem.image,
+        thumbImage: 'http://localhost:4500' + reelItem.image,
         title: reelItem.caption
       })
     })
@@ -56,7 +56,7 @@ export class PushedItemComponent {
 
   goToFeedReelList() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = true;
+    dialogConfig.autoFocus = false;
     dialogConfig.data = this.reels;
     dialogConfig.backdropClass = 'backdropBackground';
     this.dialog.open(ReelDialogComponent, dialogConfig);

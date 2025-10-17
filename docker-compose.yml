@@ -1,13 +1,22 @@
 version: '3.9'
 
 services:
-
+  db_ea:
+    image: postgres:14  
+    container_name: postgresql_ea
+    restart: always
+    volumes:
+      - db-ea-data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASS}
   backend_ea:
     build:
       context: ./backend    
     container_name: backend_ea
     ports:
-      - 8000:8000
+      - 4500:8000
     volumes:
       - ./backend/app:/app
       - static-ea-data:/vol/web
@@ -43,16 +52,7 @@ services:
 
 
 
-  db_ea:
-    image: postgres:13-alpine    
-    container_name: postgresql_ea
-    restart: always
-    volumes:
-      - db-ea-data:/var/lib/postgresql/data
-    environment:
-      - POSTGRES_DB=${DB_NAME}
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASS}
+
 
   proxy:
     build:

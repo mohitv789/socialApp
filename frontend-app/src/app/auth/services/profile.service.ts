@@ -2,7 +2,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import {CookieService} from 'ngx-cookie-service';
 import { Profile } from '../models/profile';
 
 @Injectable({ providedIn: 'root' })
@@ -24,20 +23,20 @@ export class ProfileHTTPService {
   fetchPrivateProfile(): Observable<Profile> {
 
     return this.http.get<Profile>(
-      "http://localhost:8000/profile/private/",{withCredentials: true}
+      "http://localhost:4500/profile/private/",{withCredentials: true}
     )
   }
 
   fetchPrivateProfileById(profileId: number): Observable<Profile> {
 
     return this.http.get<Profile>(
-      "http://localhost:8000/profile/private/" + profileId + "/",{withCredentials: true}
+      "http://localhost:4500/profile/private/" + profileId + "/",{withCredentials: true}
     )
   }
   addProfile(profile: Profile): Observable<Profile> {
 
     return this.http.post<Profile>(
-      "http://localhost:8000/profile/private/",
+      "http://localhost:4500/profile/private/",
       profile,{withCredentials: true})
   }
   addProfileImage(profileId: string, avatar: any) {
@@ -48,7 +47,7 @@ export class ProfileHTTPService {
       })
     }
     return this.http.post<Profile>(
-      "http://localhost:8000/profile/private/" + profileId + "/upload-avatar/",
+      "http://localhost:4500/profile/private/" + profileId + "/upload-avatar/",
       avatar,{withCredentials: true})
   }
   updateProfile(profileId: number, profile: any): Observable<Profile> {
@@ -60,47 +59,47 @@ export class ProfileHTTPService {
     }
 
     return this.http.patch<Profile>(
-      "http://localhost:8000/profile/private/" + profileId + "/",
+      "http://localhost:4500/profile/private/" + profileId + "/",
       profile,{withCredentials: true})
   }
   fetchPublicProfile(userId: number): Observable<Profile> {
 
     return this.http.get<Profile>(
-      "http://localhost:8000/profile/" + userId,{withCredentials: true}
+      "http://localhost:4500/profile/" + userId,{withCredentials: true}
     )
   }
 
   sendFriendRequest(friendRequest: any) {
     return this.http.post(
-      "http://localhost:8000/profile/friends/add_friend/",
+      "http://localhost:4500/profile/friends/add_friend/",
       friendRequest,{withCredentials: true}
     )
   }
 
   acceptFriendRequest(requestInfo: any) {
     return this.http.post(
-      "http://localhost:8000/profile/friends/accept_request/",
+      "http://localhost:4500/profile/friends/accept_request/",
       requestInfo,{withCredentials: true}
     )
   }
 
   rejectFriendRequest(requestInfo: any) {
     return this.http.post(
-      "http://localhost:8000/profile/friends/reject_request/",
+      "http://localhost:4500/profile/friends/reject_request/",
       requestInfo,{withCredentials: true}
     )
   }
 
   removeFriend(requestInfo: any) {
     return this.http.post(
-      "http://localhost:8000/profile/friends/remove_friend/",
+      "http://localhost:4500/profile/friends/remove_friend/",
       requestInfo,{withCredentials: true}
     )
   }
 
   pendingReceivedFriendRequests() {
     return this.http.get(
-      "http://localhost:8000/profile/friends/requests/",{withCredentials: true}
+      "http://localhost:4500/profile/friends/requests/",{withCredentials: true}
     )
   }
 
@@ -108,13 +107,13 @@ export class ProfileHTTPService {
 
   listFriends() {
     return this.http.get(
-      "http://localhost:8000/profile/friends/",{withCredentials: true}
+      "http://localhost:4500/profile/friends/",{withCredentials: true}
     )
   }
 
   pendingSentFriendRequests() {
     return this.http.get(
-      "http://localhost:8000/profile/friends/sent_requests/",{withCredentials: true}
+      "http://localhost:4500/profile/friends/sent_requests/",{withCredentials: true}
     )
   }
 
@@ -122,76 +121,76 @@ export class ProfileHTTPService {
   rejectedSentFriendRequests(user: number) {
     const params = new HttpParams().append('user', user);
     return this.http.get(
-      "http://localhost:8000/profile/friends/rejected_received_requests/",
+      "http://localhost:4500/profile/friends/rejected_received_requests/",
       {withCredentials: true,params}
     )
   }
 
   rejectedReceivedFriendRequests() {
     return this.http.get(
-      "http://localhost:8000/profile/friends/rejected_requests/",{withCredentials: true}
+      "http://localhost:4500/profile/friends/rejected_requests/",{withCredentials: true}
     )
   }
 
 
   fetchStoryReactionActivityFeed() {
     return this.http.get(
-      "http://localhost:8000/story/s_notifications",{withCredentials: true}
+      "http://localhost:4500/story/s_notifications",{withCredentials: true}
     )
   }
 
 
   fetchStoryCommentActivityFeed() {
     return this.http.get(
-      "http://localhost:8000/story/sc_notifications",{withCredentials: true}
+      "http://localhost:4500/story/sc_notifications",{withCredentials: true}
     )
   }
 
   fetchReelReactionActivityFeed() {
     return this.http.get(
-      "http://localhost:8000/story/r_notifications",{withCredentials: true}
+      "http://localhost:4500/story/r_notifications",{withCredentials: true}
     )
   }
 
   fetchReelCommentActivityFeed() {
     return this.http.get(
-      "http://localhost:8000/story/rc_notifications",{withCredentials: true}
+      "http://localhost:4500/story/rc_notifications",{withCredentials: true}
     )
   }
 
   fetchPhotos() {
     return this.http.get(
-      "http://localhost:8000/story/photos",{withCredentials: true}
+      "http://localhost:4500/story/photos",{withCredentials: true}
     )
   }
 
   fetchWall() {
     return this.http.get(
-      "http://localhost:8000/profile/wall",{withCredentials: true}
+      "http://localhost:4500/profile/wall",{withCredentials: true}
     )
   }
   findisFollower(id: number) {
     const params = new HttpParams().append('requested_user_id', id);
     return this.http.get(
-      "http://localhost:8000/profile/follow/is_follower/",{withCredentials: true,params}
+      "http://localhost:4500/profile/follow/is_follower/",{withCredentials: true,params}
     )
   }
   findisFollowing(id: number) {
     const params = new HttpParams().append('requested_user_id', id);
     return this.http.get(
-      "http://localhost:8000/profile/follow/is_following/",{withCredentials: true,params}
+      "http://localhost:4500/profile/follow/is_following/",{withCredentials: true,params}
     )
   }
   findisBlocked(id: number) {
     const params = new HttpParams().append('requested_user_id', id);
     return this.http.get(
-      "http://localhost:8000/profile/block/is_blocked/",{withCredentials: true,params}
+      "http://localhost:4500/profile/block/is_blocked/",{withCredentials: true,params}
     )
   }
   findisBlocking(id: number) {
     const params = new HttpParams().append('requested_user_id', id);
     return this.http.get(
-      "http://localhost:8000/profile/block/is_blocking/",{withCredentials: true,params}
+      "http://localhost:4500/profile/block/is_blocking/",{withCredentials: true,params}
     )
   }
 

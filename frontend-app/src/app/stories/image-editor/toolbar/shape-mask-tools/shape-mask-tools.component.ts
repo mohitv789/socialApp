@@ -1,39 +1,73 @@
-import { Component, Input, OnInit } from '@angular/core';
+import { Component, Input, OnInit, OnChanges, SimpleChanges, AfterViewInit } from '@angular/core';
 import { UtilService } from '../../util.service';
 
 @Component({
   selector: 'app-shape-mask-tools',
   templateUrl: './shape-mask-tools.component.html',
-  styleUrl: './shape-mask-tools.component.css'
+  styleUrls: ['./shape-mask-tools.component.css']
 })
-export class ShapeMaskToolsComponent implements OnInit {
+export class ShapeMaskToolsComponent implements OnInit, OnChanges, AfterViewInit {
 
-  @Input() selectedToolType:any;
-  @Input() activeObjectProps:any;
-  isSelectionInactive!:boolean;
-  color!: string;
-  opacity!: number;
-  shadowAmount!: number;
-  shadowBlur!: number;
-  shadowOffsetX!: number;
-  shadowOffsetY!: number;
+  @Input() selectedToolType: any;
+  @Input() activeObjectProps: any;
 
-  onUpdateShapeMask(){
-    this.utilService.onUpdateShapeMask(
-      {
-        color: this.color,
-        opacity: this.opacity,
-        shadowAmount: this.shadowAmount,
-        shadowBlur: this.shadowBlur,
-        shadowOffsetX: this.shadowOffsetX,
-        shadowOffsetY: this.shadowOffsetY
-      }
-    );
+  // always-initialized defaults to avoid undefined reads in template
+  isSelectionInactive: boolean = false;
+  color: string = '#a0c9d5';
+  opacity: number = 1;
+  shadowAmount: number = 0.3;
+  shadowBlur: number = 5;
+  shadowOffsetX: number = 0;
+  shadowOffsetY: number = 0;
+
+  constructor(private utilService: UtilService) {}
+
+  ngOnInit() {
+    // merge incoming props if present
+    if (this.activeObjectProps) {
+      this.applyActiveProps(this.activeObjectProps);
+    }
   }
 
-  addShapeMask(shape:any){
-    this.utilService.canvasCommand('ADD_SHAPE_MASK',{
-      shape: shape,
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['activeObjectProps'] && this.activeObjectProps) {
+      this.applyActiveProps(this.activeObjectProps);
+    }
+
+    // keep the inactive flag in sync whenever inputs change
+    this.isSelectionInactive = (this.activeObjectProps && this.activeObjectProps.isSelectionInactive) ? true : false;
+  }
+
+  private applyActiveProps(props: any) {
+    // protect against props being undefined / missing fields
+    this.color = (props.color !== undefined && props.color !== null) ? props.color : this.color;
+    this.opacity = (props.opacity !== undefined && props.opacity !== null) ? props.opacity : this.opacity;
+
+    // some code paths might supply shadow as object or individual fields
+    if (props.shadowAmount !== undefined) {
+      this.shadowAmount = props.shadowAmount;
+    } else if (props.shadow && typeof props.shadow === 'object' && props.shadow.color) {
+      // try extracting alpha from rgba(...) if present
+      const match = /rgba?\(([^)]+)\)/.exec(props.shadow.color);
+      if (match) {
+        const parts = match[1].split(',').map(s => s.trim());
+        if (parts.length >= 4) {
+          const alpha = parseFloat(parts[3]);
+          if (!Number.isNaN(alpha)) {
+            this.shadowAmount = alpha;
+          }
+        }
+      }
+    }
+
+    this.shadowBlur = (props.shadowBlur !== undefined && props.shadowBlur !== null) ? props.shadowBlur : this.shadowBlur;
+    this.shadowOffsetX = (props.shadowOffsetX !== undefined && props.shadowOffsetX !== null) ? props.shadowOffsetX : this.shadowOffsetX;
+    this.shadowOffsetY = (props.shadowOffsetY !== undefined && props.shadowOffsetY !== null) ? props.shadowOffsetY : this.shadowOffsetY;
+  }
+
+  onUpdateShapeMask() {
+    // send current tool settings back to parent/service
+    this.utilService.onUpdateShapeMask({
       color: this.color,
       opacity: this.opacity,
       shadowAmount: this.shadowAmount,
@@ -43,26 +77,17 @@ export class ShapeMaskToolsComponent implements OnInit {
     });
   }
 
-  constructor(private utilService: UtilService) {
+  addShapeMask(shape: any) {
+    this.utilService.canvasCommand('ADD_SHAPE_MASK', {
+      shape: shape,
+      color: this.color,
+      opacity: this.opacity,
+      shadowAmount: this.shadowAmount,
+      shadowBlur: this.shadowBlur,
+      shadowOffsetX: this.shadowOffsetX,
+      shadowOffsetY: this.shadowOffsetY
+    });
   }
-
-  ngOnInit() {
-    this.color = this.activeObjectProps.color ? this.activeObjectProps.color : '#F0E58C';
-    this.opacity = this.activeObjectProps.opacity ? this.activeObjectProps.opacity : 0.5;
-    this.shadowAmount = this.activeObjectProps.shadowAmount ? this.activeObjectProps.shadowAmount : 0;
-    this.shadowBlur = this.activeObjectProps.shadowBlur ? this.activeObjectProps.shadowBlur : 0;
-    this.shadowOffsetX = this.activeObjectProps.shadowOffsetX ? this.activeObjectProps.shadowOffsetX : 0;
-    this.shadowOffsetY = this.activeObjectProps.shadowOffsetY ? this.activeObjectProps.shadowOffsetY : 0;
-    this.isSelectionInactive = false;
-  }
-
-  ngOnChanges(){
-    this.color = this.activeObjectProps.color;
-    this.opacity = this.activeObjectProps.opacity;
-    this.shadowAmount = this.activeObjectProps.shadowAmount;
-    this.shadowBlur = this.activeObjectProps.shadowBlur;
-    this.shadowOffsetX = this.activeObjectProps.shadowOffsetX;
-    this.shadowOffsetY = this.activeObjectProps.shadowOffsetY;
-    this.isSelectionInactive = this.activeObjectProps.isSelectionInactive || false;
-  }
+  showSliders = false;
+  ngAfterViewInit() { setTimeout(()=> this.showSliders = true, 0); }
 }

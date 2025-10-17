@@ -1,8 +1,19 @@
 /* You can add global styles to this file, and also import other style files */
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+html, body, app-root, ion-app {
+  height: 100%;
+  min-height: 100%;
+}
 
+body.mat-typography,
+body {
+  position: static !important;    /* undo any position:fixed on body */
+  height: auto !important;
+  min-height: 100%;
+  overflow-x: hidden !important;  /* avoid horizontal gutters */
+  overflow-y: auto !important;    /* allow vertical scrolling */
+  -webkit-overflow-scrolling: touch;
+}
 .backdropBackground {
   filter: blur(5px);
   background-color: black;

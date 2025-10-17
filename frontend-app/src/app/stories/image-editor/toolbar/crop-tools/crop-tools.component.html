@@ -1,8 +1,10 @@
-<mat-grid-list class="filter-scope-container" cols="2" rowHeight="56px">
-  <mat-grid-tile>
-    <button mat-raised-button [color]="'warn'" class="button" (click)="onCropCancel()">CANCEL</button>
-  </mat-grid-tile>
-  <mat-grid-tile>
-    <button mat-raised-button [color]="'accent'" class="button" (click)="onCropFinish()">CROP</button>
-  </mat-grid-tile>
-</mat-grid-list>
+<ng-container *ngIf="showSliders">
+  <mat-grid-list class="filter-scope-container" cols="2" rowHeight="56px">
+    <mat-grid-tile>
+      <button mat-raised-button [color]="'warn'" class="button" (click)="onCropCancel()">CANCEL</button>
+    </mat-grid-tile>
+    <mat-grid-tile>
+      <button mat-raised-button [color]="'accent'" class="button" (click)="onCropFinish()">CROP</button>
+    </mat-grid-tile>
+  </mat-grid-list>
+</ng-container>

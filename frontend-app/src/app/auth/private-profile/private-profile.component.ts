@@ -88,7 +88,7 @@ export class PrivateProfileComponent implements OnInit{
 
   addProfile() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = true;
+    dialogConfig.autoFocus = false;
     dialogConfig.minWidth = "800px";
     dialogConfig.disableClose = true;
     dialogConfig.panelClass = 'custom-modalbox'

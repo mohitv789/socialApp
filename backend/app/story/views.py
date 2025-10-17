@@ -1,1078 +1,887 @@
+# views.py (cleaned)
 import binascii
 import json
 import logging
-from django.http import HttpResponse
+import base64
+import io
+
+from django.db import transaction
 from django.core.files.uploadedfile import InMemoryUploadedFile
-from core.models import PromotedToWallModel,Reel, Story, StoryComment, ReelComment, StoryFeed,StoryReactionActivityFeed,ReelReactionActivityFeed, User, Friend, StoryCommentActivityFeed, ReelCommentActivityFeed, ReelFeed, FriendStoryActivityFeed, FriendReelActivityFeed, ImageModel
-from rest_framework import viewsets
-from rest_framework import status, mixins
-from rest_framework.response import Response
-from .serializers import ReelSerializer, StoryCommentSerializer, StorySerializer, ImageModelSerializer,ReelCommentSerializer, ReelImageSerializer, StoryImageSerializer, StoryFeedSerializer,StoryReactionActivitySerializer,ReelReactionActivitySerializer, StoryCommentActivitySerializer, ReelCommentActivitySerializer, ReelFeedSerializer, FriendStoryActivitySerializer, FriendReelActivitySerializer
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework import viewsets
+from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
+from rest_framework import viewsets, status, mixins
+from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .permissions import IsOwnerOrReadOnly,IsReelOwnerOrReadOnly, IsCommentOwnerOrReadOnly
 from rest_framework.views import APIView
 from rest_framework.decorators import action
-import json
-import base64
-from django.core.files.base import ContentFile
-import base64
-from PIL import Image
-import io
-from user.authentication import JWTCookieAuthentication
+from rest_framework.parsers import MultiPartParser, FormParser
 
+from PIL import Image
+
+from core.models import (
+    PromotedToWallModel, Reel, Story, StoryComment, ReelComment, StoryFeed,
+    StoryReactionActivityFeed, ReelReactionActivityFeed, User, Friend,
+    StoryCommentActivityFeed, ReelCommentActivityFeed, ReelFeed,
+    FriendStoryActivityFeed, FriendReelActivityFeed, ImageModel
+)
+from .serializers import (
+    ReelSerializer, StoryCommentSerializer, StorySerializer, ImageModelSerializer,
+    ReelCommentSerializer, ReelImageSerializer, StoryImageSerializer, StoryFeedSerializer,
+    StoryReactionActivitySerializer, ReelReactionActivitySerializer, StoryCommentActivitySerializer,
+    ReelCommentActivitySerializer, ReelFeedSerializer, FriendStoryActivitySerializer,
+    FriendReelActivitySerializer
+)
+from .permissions import IsOwnerOrReadOnly, IsReelOwnerOrReadOnly, IsCommentOwnerOrReadOnly
+from user.authentication import JWTCookieAuthentication
 
 logger = logging.getLogger(__name__)
 
 
-def is_base64_image(input_data):
+def is_base64_image(input_data: str) -> bool:
+    """
+    Accepts either raw base64 string or data URL 'data:image/png;base64,...'
+    Returns True if it decodes to a valid image.
+    """
     try:
-        decoded_data = base64.b64decode(input_data)
-        image = Image.open(io.BytesIO(decoded_data))
-        # Perform additional checks or custom logic here
-        # For example, check image dimensions, format, etc.
+        if not isinstance(input_data, str):
+            return False
+        if input_data.startswith('data:'):
+            _, b64 = input_data.split(';base64,', 1)
+        else:
+            b64 = input_data
+        decoded = base64.b64decode(b64)
+        img = Image.open(io.BytesIO(decoded))
+        img.verify()  # will raise if not an image
         return True
-    except (binascii.Error, IOError) as e:
-        # Handle the exception and run custom logic
-        print("Error:", e)
-        # Perform custom error handling or actions here
+    except (binascii.Error, ValueError, OSError) as e:
+        logger.debug("is_base64_image failed: %s", e)
         return False
 
+
+def _safe_get_image_url(serializer_instance):
+    try:
+        return serializer_instance.image.url
+    except Exception:
+        return None
+
+
+def _create_or_update_image_model(linked_to: str, linked_id: str, owner: User, image_url: str):
+    """
+    Create or update an ImageModel for a story/reel. Explicitly handles DoesNotExist.
+    """
+    if not image_url:
+        return None
+    try:
+        img_obj = ImageModel.objects.get(linked_to=linked_to, linked_id=linked_id)
+        img_obj.image_data = image_url
+        img_obj.owner = owner
+        img_obj.save()
+        return img_obj
+    except ImageModel.DoesNotExist:
+        return ImageModel.objects.create(linked_to=linked_to, linked_id=linked_id, owner=owner, image_data=image_url)
+    except Exception:
+        logger.exception("Failed to create/update ImageModel for %s %s", linked_to, linked_id)
+        return None
+
+
 class ReelViewSet(viewsets.ModelViewSet):
-    """View for manage recipe APIs."""
     serializer_class = ReelSerializer
     queryset = Reel.objects.all()
-    permission_classes = [IsAuthenticated,IsReelOwnerOrReadOnly]
+    permission_classes = [IsAuthenticated, IsReelOwnerOrReadOnly]
     authentication_classes = (JWTCookieAuthentication,)
-    def _params_to_ints(self, qs):
-        """Convert a list of strings to integers."""
-        return [int(str_id) for str_id in qs.split(',')]
-    
 
     def get_queryset(self):
-        queryset = self.queryset
-        return queryset.filter(reel_owner=self.request.user).order_by('-updated_at').distinct()
-    
+        return self.queryset.filter(reel_owner=self.request.user).order_by('-updated_at').distinct()
 
-    def get_obj(self, id):
-        obj = get_object_or_404(Reel, pk=id)
-        return obj
-    
-    
     def get_serializer_class(self):
-        """Return appropriate serializer class"""
-        if self.action == 'retrieve':
-            return ReelSerializer
-        elif self.action == 'upload_image':
+        # Use the image serializer only for upload/edit-image actions
+        if self.action in ('upload_image', 'edit_image'):
             return ReelImageSerializer
-        return self.serializer_class
-    
-    # def perform_create(self, request):
-    #     print(request.data, flush=True)
-    #     serialized = self.serializer_class(data=request.data)
-    #     if serialized.is_valid():
-    #         reel_instance = serialized.save()
-    #         return Response({'id': reel_instance.id},status=status.HTTP_201_CREATED)
-    #     else:
-    #         return Response(self.serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return ReelSerializer
+
+    # keep a normal DRF create that accepts JSON (default JSONParser included)
     def perform_create(self, serializer):
         reel_instance = serializer.save()
-        logger.info(f"Reel {serializer.data.get('caption')} created by {self.request.user.first_name}!")
-        return reel_instance.id  # Return the id of the created reel
+        logger.info(f"Reel created (id={reel_instance.id}) by {self.request.user.username}")
+        return reel_instance
 
     def create(self, request, *args, **kwargs):
+
+        logger.debug("Create request.content_type: %s", request.content_type)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        reel_id = self.perform_create(serializer)
+        reel_instance = self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        return Response({'id': reel_id}, status=status.HTTP_201_CREATED, headers=headers)
-    
+        # return UUID string
+        return Response({'id': str(reel_instance.id)}, status=status.HTTP_201_CREATED, headers=headers)
+
     def update(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
-        reel_id = serializer.instance.id
-        headers = self.get_success_headers(serializer.data)
-        return Response({'id': reel_id}, status=status.HTTP_202_ACCEPTED, headers=headers)
-    
-    # @action(detail=True, methods=['GET'], name='Get Base64 Encoded Image')
-    # def get_base64_encoded_image(self, request, pk=None):
-    #     try:
-    #         instance = Reel.objects.get(pk=pk)
-    #     except Reel.DoesNotExist:
-    #         return Response({'error': 'Instance not found.'}, status=404)
+        return Response({'id': str(serializer.instance.id)}, status=status.HTTP_202_ACCEPTED)
 
-    #     with open(instance.image_field.path, 'rb') as image_file:
-    #         # Read binary image data
-    #         binary_data = image_file.read()
-
-    #     # Encode binary data to base64
-    #     base64_encoded = base64.b64encode(binary_data).decode('utf-8')
-
-    #     # Return the base64 encoded string in the API response
-    #     return Response({'base64_encoded_image': base64_encoded})
-    
-    @action(methods=['POST'], detail=True, url_path='upload-image', permission_classes=[IsAuthenticated])
+    # upload-image should accept multipart/form-data
+    @action(
+        methods=['POST'],
+        detail=True,
+        url_path='upload-image',
+        permission_classes=[IsAuthenticated],
+        parser_classes=[MultiPartParser, FormParser],
+    )
     def upload_image(self, request, pk=None):
-        """Upload an image to a recipe"""
         reel = self.get_object()
-        serializer = self.get_serializer(
-            reel,
-            data=request.data
-        )
-
+        serializer = self.get_serializer(reel, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            try:
-                imgObj = get_object_or_404(ImageModel,linked_to="reels",linked_id=reel.id)
+            # update/ensure ImageModel
+            imgObj, created = ImageModel.objects.get_or_create(
+                linked_to="reels", linked_id=str(reel.id),
+                defaults={'owner': self.request.user, 'image_data': serializer.instance.image.url}
+            )
+            if not created:
                 imgObj.image_data = serializer.instance.image.url
                 imgObj.save()
-                
-            except:
-                imgObj = ImageModel.objects.create(linked_to="reels",linked_id=reel.id, owner=self.request.user,image_data=serializer.instance.image.url)
-                imgObj.save()
-            return Response(
-                serializer.data,
-                status=status.HTTP_200_OK
-            )
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    
-    @action(methods=['PUT'], detail=True, url_path='edit-image', permission_classes=[IsAuthenticated])
+    # edit-image also accepts multipart
+    @action(
+        methods=['PUT'],
+        detail=True,
+        url_path='edit-image',
+        permission_classes=[IsAuthenticated],
+        parser_classes=[MultiPartParser, FormParser],
+    )
     def edit_image(self, request, pk=None):
-        image_data_url = request.data.get('image')
-        data = request.data.copy()
-        # Decode the data URL and save the image
-        
-        format, image_data = image_data_url.split(';base64,')  # Remove the data URL prefix
-        
-        binary_image = ContentFile(base64.b64decode(image_data))  
-        # binary_image = base64.b64decode(image_data)
-        image_file = InMemoryUploadedFile(
-            binary_image,
-            None,  # Field name (unused)
-            'image.png',  # File name
-            'image/png',  # Content type
-            binary_image.size,
-            None  # Content type extra headers (unused)
-        )
-        data['image'] = image_file
+        # same as upload_image but for PUT
         reel = self.get_object()
-        serializer = ReelImageSerializer(
-            reel,
-            data=data
-        )
-
+        serializer = self.get_serializer(reel, data=request.data, partial=True)
         if serializer.is_valid():
             serializer.save()
-            try:
-                imgObj = get_object_or_404(ImageModel,linked_to="reels",linked_id=reel.id)
+            imgObj, created = ImageModel.objects.get_or_create(
+                linked_to="reels", linked_id=str(reel.id),
+                defaults={'owner': self.request.user, 'image_data': serializer.instance.image.url}
+            )
+            if not created:
                 imgObj.image_data = serializer.instance.image.url
                 imgObj.save()
-                
-            except:
-                imgObj = ImageModel.objects.create(linked_to="reels",linked_id=reel.id, owner=self.request.user,image_data=serializer.instance.image.url)
-                imgObj.save()
-            
-            return Response(
-                serializer.data,
-                status=status.HTTP_200_OK
-            )
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class StoryViewSet(viewsets.ModelViewSet):
-    """View for manage recipe APIs."""
     serializer_class = StorySerializer
     queryset = Story.objects.all()
-    permission_classes = [IsAuthenticated,IsOwnerOrReadOnly]
+    permission_classes = [IsAuthenticated, IsOwnerOrReadOnly]
     authentication_classes = (JWTCookieAuthentication,)
 
-    def _params_to_ints(self, qs):
-        """Convert a list of strings to integers."""
-        return [int(str_id) for str_id in qs.split(',')]
-
     def get_queryset(self):
-        queryset = self.queryset
-        return queryset.filter(owner=self.request.user).order_by('-updated_at').distinct()
+        return self.queryset.filter(owner=self.request.user).order_by('-updated_at').distinct()
 
-    def get_obj(self, id):
-        obj = get_object_or_404(Story, id=id)
-        return obj
-    
-    @action(methods=['GET'], detail=False, url_path='get-reel-story', permission_classes=[IsAuthenticated])
-    def get_reel_story(self, request,pk=None, reel_id=None,*args,**kwargs):
-        stories = self.queryset
-        reel_id = self.request.query_params.get('reel_id').split("/")[0]
-        for story in stories:
-            for reel in story.reels.all():
-                print(reel.id)
-                print("param")
-                print(reel_id)
-                if str(reel.id) == str(reel_id):
-                    print("Found")
-                    return Response({'reels_story': story.id}, status=status.HTTP_200_OK)
-        return Response({'reels_story': "Not Found"}, status=status.HTTP_404_NOT_FOUND)
-
-    def perform_create(self, serializer):
-        story_instance = serializer.save()
-        logger.info(f"Story {serializer.data.get('title')} created by {self.request.user.first_name}!")
-        return story_instance.id  # Return the id of the created reel
-
-    def create(self, request, *args, **kwargs):
-        data = request.data.copy()  # Create a mutable copy of request.data
-        reels_data = data.pop('reels', [])
-        tags_str = data['tags']
-        # Remove unwanted characters from the 'tags' string
-        tags_str = tags_str.replace("'", '"')  # Replace single quotes with double quotes
-
-        # Attempt to deserialize the 'tags' string
-        try:
-            tags = json.loads(tags_str)
-        except json.JSONDecodeError as e:
-            print(f"Error decoding 'tags' field: {e}")
-            tags = []
-
-        # Update the data dictionary with the deserialized 'tags' field
-        data['tags'] = tags
-        serialized_data = json.dumps(data)
-        serializer = self.get_serializer(data=json.loads(serialized_data))
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        story_id = serializer.instance.id
-        reel_ids = []
-        for reel_item in json.loads(reels_data[0]):
-            reel_ids.append(reel_item["id"])
-        reels = Reel.objects.filter(id__in=reel_ids)
-        story = Story.objects.get(id=story_id)
-        story.reels.set(reels)
-        headers = self.get_success_headers(serializer.data)
-        friend_list = Friend.objects.friends(self.request.user)
-        s_friendfeed = FriendStoryActivityFeed.objects.create(ownerUser = self.request.user,action = "spub",story_id=story_id)
-        for friend in friend_list:
-            s_friendfeed.forUser.add(friend)
-        s_friendfeed.save()      
-
-
-        return Response({'id': story_id}, status=status.HTTP_201_CREATED, headers=headers)
-
-
-        
-    
-    def update(self, request, *args, **kwargs):
-        data = request.data.copy()  # Create a mutable copy of request.data
-        reels_data = data.pop('reels', [])
-
-        tags_str = data.pop('tags', '[]')
-        print(reels_data,flush=True)
-        # Remove unwanted characters from the 'tags' string
-        tags_str = tags_str[0].replace("'", '"')  # Replace single quotes with double quotes
-
-        # Attempt to deserialize the 'tags' string
-        try:
-            tags = json.loads(tags_str)
-        except json.JSONDecodeError as e:
-            print(f"Error decoding 'tags' field: {e}")
-            tags = []
-
-        # Update the data dictionary with the deserialized 'tags' field
-        data['tags'] = tags
-        serialized_data = json.dumps(data)
-        # print(reels_data)
-        serializer = self.get_serializer(instance=self.get_object(), data=json.loads(serialized_data))
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        story_id = kwargs.get('pk')
-        reel_ids = []
-        for reel_item in json.loads(reels_data[0]):
-            reel_ids.append(reel_item["id"])
-        reels = Reel.objects.filter(id__in=reel_ids)
-        story = Story.objects.get(id=story_id)
-        story.reels.set(reels)
-        headers = self.get_success_headers(serializer.data)
-        friend_list = Friend.objects.friends(self.request.user)
-        try:
-            s_friendfeed = FriendStoryActivityFeed.objects.get(ownerUser = self.request.user, story_id=story_id)
-            s_friendfeed.action = "sedt"
-
-        except:
-            s_friendfeed = FriendStoryActivityFeed.objects.create(ownerUser = self.request.user,action = "sedt",story_id=story_id)
-
-        for friend in friend_list:
-            s_friendfeed.forUser.add(friend)
-        s_friendfeed.save()      
-        return Response({'id': story_id}, status=status.HTTP_201_CREATED, headers=headers)
-    
     def get_serializer_class(self):
-        """Return appropriate serializer class"""
         if self.action == 'retrieve':
             return StorySerializer
-        elif self.action == 'upload_image':
+        if self.action in ('upload_image',):
             return StoryImageSerializer
-        return self.serializer_class
+        return super().get_serializer_class()
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        logger.info("Story created id=%s by user=%s", instance.id, self.request.user)
+        return instance
     
-    @action(methods=['POST'], detail=True, url_path='upload-image', permission_classes=[IsAuthenticated])
-    def upload_image(self, request, pk=None):
-        """Upload an image to a recipe"""
-        story = self.get_object()
+    def _parse_tags_and_reels(self, data):
+        """
+        Normalizes 'tags' and 'reels' fields for StoryViewSet.
 
-        serializer = self.get_serializer(
-            story,
-            data=request.data
-        )
+        Supports:
+        - tags: list of dicts [{"name": "x"}]
+        - tags: list of strings ["x", "y"]
+        - tags: JSON string (either of the above)
+        - reels: list of dicts [{"id": "..."}]
+        - reels: JSON string (same structure)
+        - reels: legacy form ['[{"id":"..."}]']
 
-        if serializer.is_valid():
+        Returns:
+            cleaned_data: dict
+            reel_ids_list: list[str]
+        """
+        data = data.copy()
+        reel_ids = []
 
-            serializer.save()
+        # ---------- TAGS ----------
+        tags_raw = data.get('tags', [])
+        tags = []
 
+        # Case 1: already a list (dicts or strings)
+        if isinstance(tags_raw, (list, tuple)):
+            for t in tags_raw:
+                if isinstance(t, dict):
+                    name = t.get('name') or t.get('title') or None
+                    if name:
+                        tags.append({'name': str(name).strip()})
+                elif isinstance(t, str):
+                    tags.append({'name': t.strip()})
+        # Case 2: JSON string
+        elif isinstance(tags_raw, str):
             try:
-                imgObj = get_object_or_404(ImageModel,linked_to="story",linked_id=story.id)
-                imgObj.image_data = serializer.instance.image.url
-                imgObj.save()
-            except:
-                imgObj = ImageModel.objects.create(linked_to="story",linked_id=story.id, owner=self.request.user,image_data=serializer.instance.image.url)
-                imgObj.save()
-            return Response(
-                serializer.data,
-                status=status.HTTP_200_OK
-            )
+                parsed_tags = json.loads(tags_raw.replace("'", '"'))
+                if isinstance(parsed_tags, list):
+                    for t in parsed_tags:
+                        if isinstance(t, dict):
+                            name = t.get('name') or t.get('title') or None
+                            if name:
+                                tags.append({'name': str(name).strip()})
+                        elif isinstance(t, str):
+                            tags.append({'name': t.strip()})
+            except json.JSONDecodeError:
+                logger.debug("Failed to parse tags JSON: %s", tags_raw)
+        else:
+            logger.debug("Unknown tags format: %s", type(tags_raw))
 
-        return Response(
-            serializer.errors,
-            status=status.HTTP_400_BAD_REQUEST
-        )
+        data['tags'] = tags
+
+        # ---------- REELS ----------
+        reels_raw = data.pop('reels', [])
+        reels_json = []
+
+        try:
+            if isinstance(reels_raw, (list, tuple)):
+                # legacy: ['[{"id": "..."}]'] or list of dicts
+                if len(reels_raw) == 1 and isinstance(reels_raw[0], str) and reels_raw[0].startswith('['):
+                    reels_json = json.loads(reels_raw[0])
+                else:
+                    reels_json = reels_raw
+            elif isinstance(reels_raw, str):
+                reels_json = json.loads(reels_raw.replace("'", '"'))
+        except Exception as e:
+            logger.debug("Failed to parse reels: %s", e)
+            reels_json = []
+
+        reel_ids = []
+        for r in reels_json or []:
+            if isinstance(r, dict) and 'id' in r:
+                reel_ids.append(r['id'])
+            elif isinstance(r, str):
+                reel_ids.append(r)
+
+        return data, reel_ids
+
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        data, reel_ids = self._parse_tags_and_reels(request.data)
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        story_id = str(serializer.instance.id)
+        if reel_ids:
+            reels_qs = Reel.objects.filter(id__in=reel_ids)
+            serializer.instance.reels.set(reels_qs)
+        # friend feed
+        friend_list = Friend.objects.friends(self.request.user)
+        try:
+            s_friendfeed = FriendStoryActivityFeed.objects.create(ownerUser=self.request.user, action="spub", story_id=story_id)
+            for friend in friend_list:
+                s_friendfeed.forUser.add(friend)
+            s_friendfeed.save()
+        except Exception:
+            logger.exception("Failed to create FriendStoryActivityFeed on story create")
+        return Response({'id': story_id}, status=status.HTTP_201_CREATED)
+
+    @transaction.atomic
+    def update(self, request, *args, **kwargs):
+        data, reel_ids = self._parse_tags_and_reels(request.data)
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        story_id = str(instance.id)
+        if reel_ids:
+            reels_qs = Reel.objects.filter(id__in=reel_ids)
+            instance.reels.set(reels_qs)
+
+        friend_list = Friend.objects.friends(self.request.user)
+        try:
+            s_friendfeed, created = FriendStoryActivityFeed.objects.get_or_create(ownerUser=self.request.user, story_id=story_id)
+            s_friendfeed.action = "sedt"
+            for friend in friend_list:
+                s_friendfeed.forUser.add(friend)
+            s_friendfeed.save()
+        except Exception:
+            logger.exception("Failed to create/update FriendStoryActivityFeed on story update")
+
+        return Response({'id': story_id}, status=status.HTTP_200_OK)
+
+    @action(methods=['POST'], detail=True, url_path='upload-image', permission_classes=[IsAuthenticated], parser_classes=[MultiPartParser, FormParser])
+    def upload_image(self, request, pk=None):
+        story = self.get_object()
+        serializer = self.get_serializer(story, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        image_url = _safe_get_image_url(serializer.instance)
+        _create_or_update_image_model(linked_to="story", linked_id=str(story.id), owner=self.request.user, image_url=image_url)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(methods=['GET'], detail=False, url_path='get-reel-story', permission_classes=[IsAuthenticated])
+    def get_reel_story(self, request, *args, **kwargs):
+        reel_param = request.query_params.get('reel_id')
+        if not reel_param:
+            return Response({'detail': 'missing reel_id'}, status=status.HTTP_400_BAD_REQUEST)
+        reel_id = str(reel_param).split("/")[0]
+        # Search stories that have the reel
+        story = Story.objects.filter(reels__id=reel_id).values_list('id', flat=True).first()
+        if story:
+            return Response({'reels_story': str(story)}, status=status.HTTP_200_OK)
+        return Response({'reels_story': "Not Found"}, status=status.HTTP_404_NOT_FOUND)
 
 
 class StoryCommentViewSet(viewsets.ModelViewSet):
-    """View for manage recipe APIs."""
     serializer_class = StoryCommentSerializer
     queryset = StoryComment.objects.all()
-    permission_classes = [IsAuthenticated,IsCommentOwnerOrReadOnly]
+    permission_classes = [IsAuthenticated, IsCommentOwnerOrReadOnly]
     authentication_classes = (JWTCookieAuthentication,)
-    
-    
-    def _params_to_ints(self, qs):
-        """Convert a list of strings to integers."""
-        return [int(str_id) for str_id in qs.split(',')]
 
     def get_queryset(self):
-        queryset = self.queryset
-        storyId = self.kwargs['story_id']
-        story = get_object_or_404(Story, pk = storyId)
-        return queryset.filter(story=story).order_by('-id')
-    
-    def perform_create(self, serializer):
-        comment_instance = serializer.save()
-        return comment_instance.id 
-    
-    def create(self, request,*args, **kwargs):
-        commented_by = request.data.get("commented_by")
-        commented_by_user = get_object_or_404(User,pk=commented_by)
         story_id = self.kwargs['story_id']
-        story_owner = get_object_or_404(User, pk = get_object_or_404(Story,pk=story_id).owner.id)
-        friendship = Friend.objects.are_friends(story_owner,commented_by_user)
-        if friendship:
-            serialized = self.serializer_class(data={**request.data,'story': story_id, 'approval': "app"})
-        else:
-            serialized = self.serializer_class(data={**request.data,'story': story_id, 'approval': "rej"})
-        if serialized.is_valid():
-            obj_id = self.perform_create(serialized)
-            comFeedObj = StoryCommentActivityFeed.objects.create(commentedOnUser=story_owner,commentByUser=commented_by_user,story_id = story_id,action="comm",comment_id = obj_id)
+        story = get_object_or_404(Story, pk=story_id)
+        return self.queryset.filter(story=story).order_by('-id')
+
+    def perform_create(self, serializer):
+        return serializer.save()
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        commented_by = request.data.get("commented_by")
+        try:
+            commented_by_user = get_object_or_404(User, pk=commented_by)
+        except Exception:
+            return Response({"detail": "commented_by user invalid"}, status=status.HTTP_400_BAD_REQUEST)
+
+        story_id = self.kwargs['story_id']
+        story = get_object_or_404(Story, pk=story_id)
+        friendship = Friend.objects.are_friends(story.owner, commented_by_user)
+        data = {**request.data, 'story': story_id, 'approval': ("app" if friendship else "rej")}
+        serializer = self.serializer_class(data=data)
+        serializer.is_valid(raise_exception=True)
+        comment = serializer.save()
+        # activity feed
+        try:
+            comFeedObj = StoryCommentActivityFeed.objects.create(
+                commentedOnUser=story.owner, commentByUser=commented_by_user, story_id=story_id, action="comm", comment_id=comment.id
+            )
             friend_list = Friend.objects.friends(self.request.user)
-            s_friendfeed = FriendStoryActivityFeed.objects.create(ownerUser = self.request.user,action = "scom",story_id=story_id)
+            s_friendfeed = FriendStoryActivityFeed.objects.create(ownerUser=self.request.user, action="scom", story_id=story_id)
             for friend in friend_list:
                 s_friendfeed.forUser.add(friend)
             comFeedObj.save()
-            s_friendfeed.save()   
-            serialized.save()
-            return Response(status=status.HTTP_202_ACCEPTED)
-        else:
-            return Response(serialized.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+            s_friendfeed.save()
+        except Exception:
+            logger.exception("Failed to create comment/activity feed for story comment")
+        return Response({'id': comment.id}, status=status.HTTP_201_CREATED)
+
+    @transaction.atomic
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
-        comment_id = self.kwargs['pk']
-        story_id = self.kwargs['story_id']
-        story = get_object_or_404(Story, pk = story_id)
-        instance = get_object_or_404(StoryComment,story=story, pk = comment_id)
+        comment_id = kwargs['pk']
+        story_id = kwargs['story_id']
+        story = get_object_or_404(Story, pk=story_id)
+        instance = get_object_or_404(StoryComment, story=story, pk=comment_id)
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
+        serializer.save()
         try:
-            comFeedObj = StoryCommentActivityFeed.objects.get(comment_id=comment_id)
-            comFeedObj.action = "ecom"
-            comFeedObj.save()
-        except:
-            print("Failed")
-
-        self.perform_update(serializer)
+            comFeedObj = StoryCommentActivityFeed.objects.filter(comment_id=comment_id).first()
+            if comFeedObj:
+                comFeedObj.action = "ecom"
+                comFeedObj.save()
+        except Exception:
+            logger.exception("Failed updating StoryCommentActivityFeed")
         friend_list = Friend.objects.friends(self.request.user)
         try:
-            s_friendfeed = FriendStoryActivityFeed.objects.get(ownerUser = self.request.user, story_id=story_id)
+            s_friendfeed, created = FriendStoryActivityFeed.objects.get_or_create(ownerUser=self.request.user, story_id=story_id)
             s_friendfeed.action = "secm"
-
-        except:
-            s_friendfeed = FriendStoryActivityFeed.objects.create(ownerUser = self.request.user,action = "sedt",story_id=story_id)
-
-        for friend in friend_list:
-            s_friendfeed.forUser.add(friend)
-        s_friendfeed.save()  
-
-        if getattr(instance, '_prefetched_objects_cache', None):
-            # If 'prefetch_related' has been applied to a queryset, we need to
-            # forcibly invalidate the prefetch cache on the instance.
-            instance._prefetched_objects_cache = {}
+            for friend in friend_list:
+                s_friendfeed.forUser.add(friend)
+            s_friendfeed.save()
+        except Exception:
+            logger.exception("Failed creating/updating FriendStoryActivityFeed on comment update")
         return Response(serializer.data, status=status.HTTP_200_OK)
-    
+
+
 class ReelCommentViewSet(viewsets.ModelViewSet):
-    """View for manage recipe APIs."""
     serializer_class = ReelCommentSerializer
     queryset = ReelComment.objects.all()
-    permission_classes = [IsAuthenticated,IsCommentOwnerOrReadOnly]
-    authentication_classes = (JWTCookieAuthentication,)   
+    permission_classes = [IsAuthenticated, IsCommentOwnerOrReadOnly]
+    authentication_classes = (JWTCookieAuthentication,)
     lookup_field = 'reel_id'
-    def _params_to_ints(self, qs):
-        """Convert a list of strings to integers."""
-        return [int(str_id) for str_id in qs.split(',')]
 
     def get_queryset(self):
-        queryset = self.queryset
-        reelId = self.kwargs['reel_id']
-        return queryset.filter(reel=reelId).order_by('-id')
-    
-    def perform_create(self, serializer):
-        comment_instance = serializer.save()
-        return comment_instance.id 
-    
-    def create(self, request,*args, **kwargs):
-        commented_by = request.data.get("commented_by")
-        commented_by_user = get_object_or_404(User,pk=commented_by)
         reel_id = self.kwargs['reel_id']
-        reel_owner = get_object_or_404(User, pk = get_object_or_404(Reel,pk=reel_id).reel_owner.id)
-        friendship = Friend.objects.are_friends(reel_owner,commented_by_user)
-        if friendship:
-            serialized = self.serializer_class(data={**request.data,'reel': reel_id, 'approval': "app"})
-        else:
-            serialized = self.serializer_class(data={**request.data,'reel': reel_id, 'approval': "rej"})
-        if serialized.is_valid():
+        return self.queryset.filter(reel=reel_id).order_by('-id')
 
-            obj_id = self.perform_create(serialized)
-            comFeedObj = ReelCommentActivityFeed.objects.create(commentedOnUser=reel_owner,commentByUser=commented_by_user,reel_id = reel_id,action="comm",comment_id = obj_id)
+    def perform_create(self, serializer):
+        return serializer.save()
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        commented_by = request.data.get("commented_by")
+        try:
+            commented_by_user = get_object_or_404(User, pk=commented_by)
+        except Exception:
+            return Response({"detail": "commented_by user invalid"}, status=status.HTTP_400_BAD_REQUEST)
+
+        reel_id = self.kwargs['reel_id']
+        reel = get_object_or_404(Reel, pk=reel_id)
+        friendship = Friend.objects.are_friends(reel.reel_owner, commented_by_user)
+        data = {**request.data, 'reel': reel_id, 'approval': ("app" if friendship else "rej")}
+        serializer = self.serializer_class(data=data)
+        serializer.is_valid(raise_exception=True)
+        comment = serializer.save()
+        try:
+            comFeedObj = ReelCommentActivityFeed.objects.create(
+                commentedOnUser=reel.reel_owner, commentByUser=commented_by_user, reel_id=reel_id, action="comm", comment_id=comment.id
+            )
             friend_list = Friend.objects.friends(self.request.user)
-            r_friendfeed = FriendReelActivityFeed.objects.create(ownerUser = self.request.user,action = "rcom",reel_id=reel_id)
+            r_friendfeed = FriendReelActivityFeed.objects.create(ownerUser=self.request.user, action="rcom", reel_id=reel_id)
             for friend in friend_list:
                 r_friendfeed.forUser.add(friend)
-            r_friendfeed.save()  
             comFeedObj.save()
-            serialized.save()
-            return Response(status=status.HTTP_202_ACCEPTED)
-        else:
-            return Response(self.serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        
+            r_friendfeed.save()
+        except Exception:
+            logger.exception("Failed to create comment/activity feed for reel comment")
+        return Response({'id': comment.id}, status=status.HTTP_201_CREATED)
+
+    @transaction.atomic
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
         comment_id = kwargs.get('pk')
         reel_id = kwargs.get('reel_id')
-        instance = get_object_or_404(ReelComment,pk = comment_id)
+        instance = get_object_or_404(ReelComment, pk=comment_id)
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
+        serializer.save()
         try:
-            comFeedObj = ReelCommentActivityFeed.objects.get(comment_id=comment_id)
-            comFeedObj.action = "ecom"
-            comFeedObj.save()
-        except:
-            print("Failed")
-
-        self.perform_update(serializer)
+            comFeedObj = ReelCommentActivityFeed.objects.filter(comment_id=comment_id).first()
+            if comFeedObj:
+                comFeedObj.action = "ecom"
+                comFeedObj.save()
+        except Exception:
+            logger.exception("Failed updating ReelCommentActivityFeed")
         friend_list = Friend.objects.friends(self.request.user)
         try:
-            r_friendfeed = FriendReelActivityFeed.objects.get(ownerUser = self.request.user, reel_id=reel_id)
+            r_friendfeed, created = FriendReelActivityFeed.objects.get_or_create(ownerUser=self.request.user, reel_id=reel_id)
             r_friendfeed.action = "recm"
-
-        except:
-            r_friendfeed = FriendReelActivityFeed.objects.create(ownerUser = self.request.user,action = "sedt",reel_id=reel_id)
-
-        for friend in friend_list:
-            r_friendfeed.forUser.add(friend)
-        r_friendfeed.save()  
-
-        if getattr(instance, '_prefetched_objects_cache', None):
-            # If 'prefetch_related' has been applied to a queryset, we need to
-            # forcibly invalidate the prefetch cache on the instance.
-            instance._prefetched_objects_cache = {}
+            for friend in friend_list:
+                r_friendfeed.forUser.add(friend)
+            r_friendfeed.save()
+        except Exception:
+            logger.exception("Failed creating/updating FriendReelActivityFeed on comment update")
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-class StoryLikeAPIView(APIView):
-    """Allow users to add/remove a like to/from an answer instance."""
 
+# --- Reaction / Like / Celebrate / Love endpoints ---
+# These endpoints are mostly mechanical: add/remove user from related M2M and update feeds.
+# I preserve your existing behavior but made the code explicit and logged exceptions.
+
+def _remove_from_feed_m2m(feed_model, feed_user, field_name, instance_id):
+    try:
+        feed_obj = feed_model.objects.get(feedUser=feed_user)
+        getattr(feed_obj, field_name).remove(instance_id)
+        feed_obj.save()
+    except feed_model.DoesNotExist:
+        pass
+    except Exception:
+        logger.exception("Error removing from feed m2m %s for user %s", field_name, feed_user)
+
+
+def _add_to_feed_m2m_or_create(feed_model, feed_user, field_name, instance):
+    try:
+        feed_obj, _ = feed_model.objects.get_or_create(feedUser=feed_user)
+        existing = list(getattr(feed_obj, field_name).all())
+        if instance not in existing:
+            getattr(feed_obj, field_name).add(instance)
+            feed_obj.save()
+    except Exception:
+        logger.exception("Error adding to feed m2m %s for user %s", field_name, feed_user)
+
+
+class StoryReactionBaseAPIView(APIView):
+    """Base helper for Story reaction endpoints."""
     serializer_class = StorySerializer
     permission_classes = [IsAuthenticated]
     authentication_classes = (JWTCookieAuthentication,)
-    def delete(self, request, storyId):
-        """Remove request.user from the voters queryset of an answer instance."""
+
+    def _get_story_and_user(self, storyId, request):
         story = get_object_or_404(Story, id=storyId)
         user = request.user
+        return story, user
+
+
+class ReelReactionBaseAPIView(APIView):
+    serializer_class = ReelSerializer
+    permission_classes = [IsAuthenticated]
+    authentication_classes = (JWTCookieAuthentication,)
+
+
+# For brevity I keep the explicit endpoints but cleaned up exceptions and DRYed some code.
+class StoryLikeAPIView(StoryReactionBaseAPIView):
+    def delete(self, request, storyId):
+        story, user = self._get_story_and_user(storyId, request)
         story.likes.remove(user)
         story.save()
 
+        _remove_from_feed_m2m(StoryFeed, user, 'feedLikedStory', story)
         try:
-            feedObj = get_object_or_404(StoryFeed, feedUser=user)
-            for feedobject_sliked in feedObj.feedLikedStory.all():
-                if str(feedobject_sliked.id) == str(story.id):
-                    feedObj.feedLikedStory.remove(storyId)
-                    feedObj.save()
-                else:
-                    pass
-            
-        except:
-            pass
+            activity = StoryReactionActivityFeed.objects.filter(doneByUser=user, story=story, currentUser=story.owner, action="lik").first()
+            if activity:
+                activity.action = "ulk"
+                activity.save()
+        except Exception:
+            logger.exception("Failed updating StoryReactionActivityFeed on unlike")
 
         try:
-            activityObj = get_object_or_404(StoryReactionActivityFeed,doneByUser = user,story=story,currentUser=story.owner,action="lik")
-            activityObj.action = "ulk"
-            activityObj.save()
-                
-        except:
-            pass
+            s_friendfeed = FriendStoryActivityFeed.objects.filter(ownerUser=request.user, story_id=storyId).first()
+            if s_friendfeed:
+                s_friendfeed.action = "sulk"
+                for friend in Friend.objects.friends(request.user):
+                    s_friendfeed.forUser.add(friend)
+                s_friendfeed.save()
+        except Exception:
+            logger.exception("Failed updating FriendStoryActivityFeed on unlike")
 
-        try:
-            s_friendfeed = get_object_or_404(FriendStoryActivityFeed,ownerUser = self.request.user,story_id=storyId)
-            s_friendfeed.action = "sulk"
-            friend_list = Friend.objects.friends(self.request.user)
-            for friend in friend_list:
-                s_friendfeed.forUser.add(friend)
-            s_friendfeed.save()  
-                
-        except:
-            pass
-
-        serializer_context = {"request": request}
-        serializer = self.serializer_class(story, context=serializer_context)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(self.serializer_class(story, context={"request": request}).data, status=status.HTTP_200_OK)
 
     def post(self, request, storyId):
-        """Add request.user to the voters queryset of an answer instance."""
-        story = get_object_or_404(Story, id=storyId)
-        user = request.user
+        story, user = self._get_story_and_user(storyId, request)
         story.likes.add(user)
         story.save()
-        try:
-            feedObj = get_object_or_404(StoryFeed, feedUser=user)
-            if len(feedObj.feedLikedStory.all()) > 0:
-                for feedobj_sliked in feedObj.feedLikedStory.all():
-                    if str(feedobj_sliked.id) == str(story.id):
-                        pass
-                    else:
-                        feedObj.feedLikedStory.add(story)
-                        feedObj.save()
-            else:
-                feedObj.feedLikedStory.add(story)
-                feedObj.save()   
 
-        except:
-            feedObj = StoryFeed.objects.create(feedUser = user)
-            feedObj.feedLikedStory.add(story)
-            feedObj.save()
-        
+        _add_to_feed_m2m_or_create(StoryFeed, user, 'feedLikedStory', story)
+
         try:
-            activityObj = get_object_or_404(StoryReactionActivityFeed,doneByUser = user,story=story,currentUser=story.owner,action="lik")                
-        except:
-            activityObj = StoryReactionActivityFeed.objects.create(currentUser = story.owner, doneByUser = self.request.user, story=story, action = "lik")
-            activityObj.save()
-        
+            activity, created = StoryReactionActivityFeed.objects.get_or_create(currentUser=story.owner, doneByUser=user, story=story, action="lik")
+            if created:
+                activity.save()
+        except Exception:
+            logger.exception("Failed creating StoryReactionActivityFeed on like")
+
         try:
-            s_friendfeed = get_object_or_404(FriendStoryActivityFeed,ownerUser = self.request.user,story_id=storyId,action="slik")                
-        except:
-            s_friendfeed = FriendStoryActivityFeed.objects.create(ownerUser = self.request.user,story_id=storyId,action="slik")
-            friend_list = Friend.objects.friends(self.request.user)
-            for friend in friend_list:
+            s_friendfeed, created = FriendStoryActivityFeed.objects.get_or_create(ownerUser=request.user, story_id=storyId, action="slik")
+            for friend in Friend.objects.friends(request.user):
                 s_friendfeed.forUser.add(friend)
             s_friendfeed.save()
+        except Exception:
+            logger.exception("Failed creating FriendStoryActivityFeed on like")
+
+        return Response(self.serializer_class(story, context={"request": request}).data, status=status.HTTP_200_OK)
 
 
-        serializer_context = {"request": request}
-        serializer = self.serializer_class(story, context=serializer_context)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
-class ReelLikeAPIView(APIView):
-    """Allow users to add/remove a like to/from an answer instance."""
-
-    serializer_class = ReelSerializer
-    permission_classes = [IsAuthenticated]
-    authentication_classes = (JWTCookieAuthentication,)
+class ReelLikeAPIView(ReelReactionBaseAPIView):
     def delete(self, request, reelId):
-        """Remove request.user from the voters queryset of an answer instance."""
         reel = get_object_or_404(Reel, id=reelId)
         user = request.user
-
         reel.likes.remove(user)
         reel.save()
 
-        try:
-            feedObj = get_object_or_404(ReelFeed, feedUser=user)
-            for feedobject_rliked in feedObj.feedLikedReel.all():
-                if str(feedobject_rliked.id) == str(reel.id):
-                    feedObj.feedLikedReel.remove(reelId)
-                    feedObj.save()
-                else:
-                    pass
-            
-        except:
-            pass
+        _remove_from_feed_m2m(ReelFeed, user, 'feedLikedReel', reel)
 
         try:
-            activityObj = get_object_or_404(ReelReactionActivityFeed,doneByUser = user,reel=reel,currentUser=reel.reel_owner,action="lik")
-            activityObj.action = "ulk"
-            activityObj.save()
-                
-        except:
-            pass
-        
-        try:
-            r_friendfeed = get_object_or_404(FriendReelActivityFeed,ownerUser = self.request.user,reel_id=reelId)
-            r_friendfeed.action = "rulk"
-            friend_list = Friend.objects.friends(self.request.user)
-            for friend in friend_list:
-                r_friendfeed.forUser.add(friend)
-            r_friendfeed.save()  
-                
-        except:
-            pass
-    
-        serializer_context = {"request": request}
-        serializer = self.serializer_class(reel, context=serializer_context)
+            activity = ReelReactionActivityFeed.objects.filter(doneByUser=user, reel=reel, currentUser=reel.reel_owner, action="lik").first()
+            if activity:
+                activity.action = "ulk"
+                activity.save()
+        except Exception:
+            logger.exception("Failed updating ReelReactionActivityFeed on unlike")
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        try:
+            r_friendfeed = FriendReelActivityFeed.objects.filter(ownerUser=request.user, reel_id=reelId).first()
+            if r_friendfeed:
+                r_friendfeed.action = "rulk"
+                for friend in Friend.objects.friends(request.user):
+                    r_friendfeed.forUser.add(friend)
+                r_friendfeed.save()
+        except Exception:
+            logger.exception("Failed updating FriendReelActivityFeed on unlike")
+
+        return Response(self.serializer_class(reel, context={"request": request}).data, status=status.HTTP_200_OK)
 
     def post(self, request, reelId):
-        """Add request.user to the voters queryset of an answer instance."""
         reel = get_object_or_404(Reel, id=reelId)
         user = request.user
-
         reel.likes.add(user)
         reel.save()
-        try:
-            feedObj = get_object_or_404(ReelFeed, feedUser=user)
-            
-            if len(feedObj.feedLikedReel.all()) > 0:
-                for feedobj_rliked in feedObj.feedLikedReel.all():
-                    if str(feedobj_rliked.id) == str(reel.id):
-                        pass
-                    else:
-                        feedObj.feedLikedReel.add(reel)
-                        feedObj.save()
-            else:
-                feedObj.feedLikedReel.add(reel)
-                feedObj.save()  
 
-        except:
-            feedObj = ReelFeed.objects.create(feedUser = user)            
-            feedObj.feedLikedReel.add(reel)
-            feedObj.save()
+        _add_to_feed_m2m_or_create(ReelFeed, user, 'feedLikedReel', reel)
 
-        
         try:
-            activityObj = get_object_or_404(ReelReactionActivityFeed,doneByUser = user,reel=reel,currentUser=reel.reel_owner,action="lik")                
-        except:
-            activityObj = ReelReactionActivityFeed.objects.create(currentUser = reel.reel_owner, doneByUser = self.request.user, reel=reel, action = "lik")
-            activityObj.save()
-        
+            activity, created = ReelReactionActivityFeed.objects.get_or_create(currentUser=reel.reel_owner, doneByUser=user, reel=reel, action="lik")
+            if created:
+                activity.save()
+        except Exception:
+            logger.exception("Failed creating ReelReactionActivityFeed on like")
+
         try:
-            r_friendfeed = get_object_or_404(FriendReelActivityFeed,ownerUser = self.request.user,reel_id=reelId,action="rlik")                
-        except:
-            r_friendfeed = FriendReelActivityFeed.objects.create(ownerUser = self.request.user,reel_id=reelId,action="rlik")
-            friend_list = Friend.objects.friends(self.request.user)
-            for friend in friend_list:
+            r_friendfeed, created = FriendReelActivityFeed.objects.get_or_create(ownerUser=request.user, reel_id=reelId, action="rlik")
+            for friend in Friend.objects.friends(request.user):
                 r_friendfeed.forUser.add(friend)
             r_friendfeed.save()
-        serializer_context = {"request": request}
-        serializer = self.serializer_class(reel, context=serializer_context)
+        except Exception:
+            logger.exception("Failed creating FriendReelActivityFeed on like")
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(self.serializer_class(reel, context={"request": request}).data, status=status.HTTP_200_OK)
 
 
-class StoryCelebrateAPIView(APIView):
-    """Allow users to add/remove a like to/from an answer instance."""
+# Implementations for Celebrate / Love follow the same pattern as Like.
+# For brevity include one example (StoryCelebrateAPIView). You can copy/paste for others.
 
-    serializer_class = StorySerializer
-    permission_classes = [IsAuthenticated]
-    authentication_classes = (JWTCookieAuthentication,)
+class StoryCelebrateAPIView(StoryReactionBaseAPIView):
     def delete(self, request, storyId):
-        """Remove request.user from the voters queryset of an answer instance."""
-        story = get_object_or_404(Story, id=storyId)
-        user = request.user
-
+        story, user = self._get_story_and_user(storyId, request)
         story.celebrates.remove(user)
         story.save()
-
+        _remove_from_feed_m2m(StoryFeed, user, 'feedCelebratedStory', story)
         try:
-            feedObj = get_object_or_404(StoryFeed, feedUser=user)
-            for feedobject_scelebrate in feedObj.feedCelebratedStory.all():
-                if str(feedobject_scelebrate.id) == str(story.id):
-                    feedObj.feedCelebratedStory.remove(storyId)
-                    feedObj.save()
-                else:
-                    pass
-            
-        except:
-            pass
-
+            activity = StoryReactionActivityFeed.objects.filter(doneByUser=user, story=story, currentUser=story.owner, action="cel").first()
+            if activity:
+                activity.action = "ucl"
+                activity.save()
+        except Exception:
+            logger.exception("Failed updating StoryReactionActivityFeed on uncelebrate")
         try:
-            activityObj = get_object_or_404(StoryReactionActivityFeed,doneByUser = user,story=story,currentUser=story.owner,action="cel")
-            activityObj.action = "ucl"
-            activityObj.save()
-                
-        except:
-            pass
-
-        try:
-            s_friendfeed = get_object_or_404(FriendStoryActivityFeed,ownerUser = self.request.user,story_id=storyId)
-            s_friendfeed.action = "sucl"
-            friend_list = Friend.objects.friends(self.request.user)
-            for friend in friend_list:
-                s_friendfeed.forUser.add(friend)
-            s_friendfeed.save()  
-                
-        except:
-            pass
-        serializer_context = {"request": request}
-        serializer = self.serializer_class(story, context=serializer_context)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
+            s_friendfeed = FriendStoryActivityFeed.objects.filter(ownerUser=request.user, story_id=storyId).first()
+            if s_friendfeed:
+                s_friendfeed.action = "sucl"
+                for friend in Friend.objects.friends(request.user):
+                    s_friendfeed.forUser.add(friend)
+                s_friendfeed.save()
+        except Exception:
+            logger.exception("Failed updating FriendStoryActivityFeed on uncelebrate")
+        return Response(self.serializer_class(story, context={"request": request}).data, status=status.HTTP_200_OK)
 
     def post(self, request, storyId):
-        """Add request.user to the voters queryset of an answer instance."""
-        story = get_object_or_404(Story, id=storyId)
-        user = request.user
-
+        story, user = self._get_story_and_user(storyId, request)
         story.celebrates.add(user)
         story.save()
-        
+        _add_to_feed_m2m_or_create(StoryFeed, user, 'feedCelebratedStory', story)
         try:
-            feedObj = get_object_or_404(StoryFeed, feedUser=user)
-            
-            if len(feedObj.feedCelebratedStory.all()) > 0:
-                for feedobj_scelebrate in feedObj.feedCelebratedStory.all():
-                    if str(feedobj_scelebrate.id) == str(story.id):
-                        pass
-                    else:
-                        feedObj.feedCelebratedStory.add(story)
-                        feedObj.save()
-            else:
-                feedObj.feedCelebratedStory.add(story)
-                feedObj.save()
-
-        except:
-            feedObj = StoryFeed.objects.create(feedUser = user)            
-            feedObj.feedCelebratedStory.add(story)
-            feedObj.save()
-        
+            activity, created = StoryReactionActivityFeed.objects.get_or_create(currentUser=story.owner, doneByUser=user, story=story, action="cel")
+            if created:
+                activity.save()
+        except Exception:
+            logger.exception("Failed creating StoryReactionActivityFeed on celebrate")
         try:
-            activityObj = get_object_or_404(StoryReactionActivityFeed,doneByUser = user,story=story,currentUser=story.owner,action="cel")                
-        except:
-            activityObj = StoryReactionActivityFeed.objects.create(currentUser = story.owner, doneByUser = self.request.user, story=story, action = "cel")
-            activityObj.save()
-        
-        try:
-            s_friendfeed = get_object_or_404(FriendStoryActivity,ownerUser = self.request.user,story_id=storyId,action="scel")                
-        except:
-            s_friendfeed = FriendStoryActivityFeed.objects.create(ownerUser = self.request.user,story_id=storyId,action="scel")
-            friend_list = Friend.objects.friends(self.request.user)
-            for friend in friend_list:
+            s_friendfeed, created = FriendStoryActivityFeed.objects.get_or_create(ownerUser=request.user, story_id=storyId, action="scel")
+            for friend in Friend.objects.friends(request.user):
                 s_friendfeed.forUser.add(friend)
             s_friendfeed.save()
+        except Exception:
+            logger.exception("Failed creating FriendStoryActivityFeed on celebrate")
+        return Response(self.serializer_class(story, context={"request": request}).data, status=status.HTTP_200_OK)
 
-        serializer_context = {"request": request}
-        serializer = self.serializer_class(story, context=serializer_context)
+# --- Missing reaction view classes -- paste below existing classes in views.py ---
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
-class ReelCelebrateAPIView(APIView):
-    """Allow users to add/remove a like to/from an answer instance."""
-
-    serializer_class = ReelSerializer
-    permission_classes = [IsAuthenticated]
-    authentication_classes = (JWTCookieAuthentication,)
-    def delete(self, request, reelId):
-        """Remove request.user from the voters queryset of an answer instance."""
-        reel = get_object_or_404(Reel, id=reelId)
-        user = request.user
-
-        reel.celebrates.remove(user)
-        reel.save()
-        try:
-            feedObj = get_object_or_404(ReelFeed, feedUser=user)
-            for feedobject_rcelebrate in feedObj.feedCelebratedReel.all():
-                if str(feedobject_rcelebrate.id) == str(reel.id):
-                    feedObj.feedCelebratedReel.remove(reelId)
-                    feedObj.save()
-                else:
-                    pass
-           
-        except:
-            pass
-
-        try:
-            activityObj = get_object_or_404(ReelReactionActivityFeed,doneByUser = user,reel=reel,currentUser=reel.reel_owner,action="cel")
-            activityObj.action = "ucl"
-            activityObj.save()
-                
-        except:
-            pass
-
-        try:
-            r_friendfeed = get_object_or_404(FriendReelActivityFeed,ownerUser = self.request.user,reel_id=reelId)
-            r_friendfeed.action = "rucl"
-            friend_list = Friend.objects.friends(self.request.user)
-            for friend in friend_list:
-                r_friendfeed.forUser.add(friend)
-            r_friendfeed.save()  
-                
-        except:
-            pass
-        serializer_context = {"request": request}
-        serializer = self.serializer_class(reel, context=serializer_context)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    def post(self, request, reelId):
-        """Add request.user to the voters queryset of an answer instance."""
-        reel = get_object_or_404(Reel, id=reelId)
-        user = request.user
-
-        reel.celebrates.add(user)
-        reel.save()
-        
-        try:
-            feedObj = get_object_or_404(ReelFeed, feedUser=user)
-            
-            if len(feedObj.feedCelebratedReel.all()) > 0:
-                for feedobj_rcelebrate in feedObj.feedCelebratedReel.all():
-                    if str(feedobj_rcelebrate.id) == str(reel.id):
-                        pass
-                    else:
-                        feedObj.feedCelebratedReel.add(reel)
-                        feedObj.save()
-            else:
-                feedObj.feedCelebratedReel.add(reel)
-                feedObj.save()
-
-        except:
-            feedObj = ReelFeed.objects.create(feedUser = user)            
-            feedObj.feedCelebratedReel.add(reel)
-            feedObj.save()
-        
-        try:
-            activityObj = get_object_or_404(ReelReactionActivityFeed,doneByUser = user,reel=reel,currentUser=reel.reel_owner,action="cel")                
-        except:
-            activityObj = ReelReactionActivityFeed.objects.create(currentUser = reel.reel_owner, doneByUser = self.request.user, reel=reel, action = "cel")
-            activityObj.save()
-        
-        try:
-            r_friendfeed = get_object_or_404(FriendReelActivityFeed,ownerUser = self.request.user,reel_id=reelId,action="rcel")                
-        except:
-            r_friendfeed = FriendReelActivityFeed.objects.create(ownerUser = self.request.user,reel_id=reelId,action="rcel")
-            friend_list = Friend.objects.friends(self.request.user)
-            for friend in friend_list:
-                r_friendfeed.forUser.add(friend)
-            r_friendfeed.save()
-        serializer_context = {"request": request}
-        serializer = self.serializer_class(reel, context=serializer_context)
-
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-class StoryLoveAPIView(APIView):
-    """Allow users to add/remove a like to/from an answer instance."""
-
-    serializer_class = StorySerializer
-    permission_classes = [IsAuthenticated]
-    authentication_classes = (JWTCookieAuthentication,)
+class StoryLoveAPIView(StoryReactionBaseAPIView):
+    """
+    Add/remove 'love' reaction on a Story.
+    POST -> add love
+    DELETE -> remove love
+    """
     def delete(self, request, storyId):
-        """Remove request.user from the voters queryset of an answer instance."""
         story = get_object_or_404(Story, id=storyId)
         user = request.user
-
         story.loves.remove(user)
         story.save()
-        try:
-            feedObj = get_object_or_404(StoryFeed, feedUser=user)
-            for feedobject_slove in feedObj.feedLovedStory.all():
-                if str(feedobject_slove.id) == str(story.id):
-                    feedObj.feedLovedStory.remove(storyId)
-                    feedObj.save()
-                else:
-                    pass
-            
-        except:
-            pass
-        try:
-            activityObj = get_object_or_404(StoryReactionActivityFeed,doneByUser = user,story=story,currentUser=story.owner,action="lov")
-            activityObj.action = "sulo"
-            activityObj.save()
-                
-        except:
-            pass
-    
-        try:
-            s_friendfeed = get_object_or_404(FriendStoryActivityFeed,ownerUser = self.request.user,story_id=storyId)
-            s_friendfeed.action = "sulo"
-            friend_list = Friend.objects.friends(self.request.user)
-            for friend in friend_list:
-                s_friendfeed.forUser.add(friend)
-            s_friendfeed.save()  
-                
-        except:
-            pass
-        serializer_context = {"request": request}
-        serializer = self.serializer_class(story, context=serializer_context)
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        # remove from user's StoryFeed
+        _remove_from_feed_m2m(StoryFeed, user, 'feedLovedStory', story)
+
+        # update activity feed if exists (mark as un-loved)
+        try:
+            activity = StoryReactionActivityFeed.objects.filter(doneByUser=user, story=story, currentUser=story.owner, action="lov").first()
+            if activity:
+                activity.action = "sulo"  # follow your existing code's 'unlove' marker
+                activity.save()
+        except Exception:
+            logger.exception("Failed updating StoryReactionActivityFeed on unlove")
+
+        # friend activity
+        try:
+            s_friendfeed = FriendStoryActivityFeed.objects.filter(ownerUser=request.user, story_id=storyId).first()
+            if s_friendfeed:
+                s_friendfeed.action = "sulo"
+                for friend in Friend.objects.friends(request.user):
+                    s_friendfeed.forUser.add(friend)
+                s_friendfeed.save()
+        except Exception:
+            logger.exception("Failed updating FriendStoryActivityFeed on unlove")
+
+        return Response(StorySerializer(story, context={"request": request}).data, status=status.HTTP_200_OK)
 
     def post(self, request, storyId):
-        """Add request.user to the voters queryset of an answer instance."""
         story = get_object_or_404(Story, id=storyId)
         user = request.user
-
         story.loves.add(user)
         story.save()
-        try:
-            feedObj = get_object_or_404(StoryFeed, feedUser=user)
-            
-            if len(feedObj.feedLovedStory.all()) > 0:
-                for feedobj_slove in feedObj.feedLovedStory.all():
-                    if str(feedobj_slove.id) == str(story.id):
-                        pass
-                    else:
-                        feedObj.feedLovedStory.add(story)
-                        feedObj.save()
-            else:
-                feedObj.feedLovedStory.add(story)
-                feedObj.save()
 
-        except:
-            feedObj = StoryFeed.objects.create(feedUser = user)            
-            feedObj.feedLovedStory.add(story)
-            feedObj.save()
+        # add to user's feed or create
+        _add_to_feed_m2m_or_create(StoryFeed, user, 'feedLovedStory', story)
 
+        # ensure activity row
         try:
-            activityObj = get_object_or_404(StoryReactionActivityFeed,doneByUser = user,story=story,currentUser=story.owner,action="lov")                
-        except:
-            activityObj = StoryReactionActivityFeed.objects.create(currentUser = story.owner, doneByUser = self.request.user, story=story, action = "lov")
-            activityObj.save()
-        
+            activity, created = StoryReactionActivityFeed.objects.get_or_create(
+                currentUser=story.owner, doneByUser=user, story=story, action="lov"
+            )
+            if created:
+                activity.save()
+        except Exception:
+            logger.exception("Failed creating StoryReactionActivityFeed on love")
+
+        # friend feed
         try:
-            s_friendfeed = get_object_or_404(FriendStoryActivity,ownerUser = self.request.user,story_id=storyId,action="slov")                
-        except:
-            s_friendfeed = FriendStoryActivityFeed.objects.create(ownerUser = self.request.user,story_id=storyId,action="slov")
-            friend_list = Friend.objects.friends(self.request.user)
-            for friend in friend_list:
+            s_friendfeed, created = FriendStoryActivityFeed.objects.get_or_create(ownerUser=request.user, story_id=storyId, action="slov")
+            for friend in Friend.objects.friends(request.user):
                 s_friendfeed.forUser.add(friend)
             s_friendfeed.save()
-        serializer_context = {"request": request}
-        serializer = self.serializer_class(story, context=serializer_context)
+        except Exception:
+            logger.exception("Failed creating FriendStoryActivityFeed on love")
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
-class ReelLoveAPIView(APIView):
-    """Allow users to add/remove a like to/from an answer instance."""
+        return Response(StorySerializer(story, context={"request": request}).data, status=status.HTTP_200_OK)
 
-    serializer_class = ReelSerializer
-    permission_classes = [IsAuthenticated]
-    authentication_classes = (JWTCookieAuthentication,)
+
+class ReelCelebrateAPIView(ReelReactionBaseAPIView):
+    """
+    Add/remove 'celebrate' reaction on a Reel.
+    POST -> add celebrate
+    DELETE -> remove celebrate
+    """
     def delete(self, request, reelId):
-        """Remove request.user from the voters queryset of an answer instance."""
         reel = get_object_or_404(Reel, id=reelId)
         user = request.user
-
-        reel.loves.remove(user)
+        reel.celebrates.remove(user)
         reel.save()
-        try:
-            feedObj = get_object_or_404(ReelFeed, feedUser=user)
-            for feedobject_rlove in feedObj.feedLovedReel.all():
-                if str(feedobject_rlove.id) == str(reel.id):
-                    feedObj.feedLovedReel.remove(reelId)
-                    feedObj.save()
-                else:
-                    pass            
-        except:
-            pass
-        try:
-            activityObj = get_object_or_404(StoryReactionActivityFeed,doneByUser = user,reel=reel,currentUser=reel.reel_owner,action="lov")
-            activityObj.action = "ulv"
-            activityObj.save()
-                
-        except:
-            pass
-    
-        try:
-            r_friendfeed = get_object_or_404(FriendReelActivityFeed,ownerUser = self.request.user,reel_id=reelId)
-            r_friendfeed.action = "rulo"
-            friend_list = Friend.objects.friends(self.request.user)
-            for friend in friend_list:
-                r_friendfeed.forUser.add(friend)
-            r_friendfeed.save()  
-                
-        except:
-            pass
-        serializer_context = {"request": request}
-        serializer = self.serializer_class(reel, context=serializer_context)
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
+        # remove from ReelFeed
+        _remove_from_feed_m2m(ReelFeed, user, 'feedCelebratedReel', reel)
+
+        # update activity feed if exists (mark as un-celebrated)
+        try:
+            activity = ReelReactionActivityFeed.objects.filter(doneByUser=user, reel=reel, currentUser=reel.reel_owner, action="cel").first()
+            if activity:
+                activity.action = "ucl"
+                activity.save()
+        except Exception:
+            logger.exception("Failed updating ReelReactionActivityFeed on uncelebrate")
+
+        # friend feed
+        try:
+            r_friendfeed = FriendReelActivityFeed.objects.filter(ownerUser=request.user, reel_id=reelId).first()
+            if r_friendfeed:
+                r_friendfeed.action = "rucl"
+                for friend in Friend.objects.friends(request.user):
+                    r_friendfeed.forUser.add(friend)
+                r_friendfeed.save()
+        except Exception:
+            logger.exception("Failed updating FriendReelActivityFeed on uncelebrate")
+
+        return Response(ReelSerializer(reel, context={"request": request}).data, status=status.HTTP_200_OK)
 
     def post(self, request, reelId):
-        """Add request.user to the voters queryset of an answer instance."""
         reel = get_object_or_404(Reel, id=reelId)
         user = request.user
-
-        reel.loves.add(user)
+        reel.celebrates.add(user)
         reel.save()
-        try:
-            feedObj = get_object_or_404(ReelFeed, feedUser=user)
-            
-            if len(feedObj.feedLovedReel.all()) > 0:
-                for feedobj_rlove in feedObj.feedLovedReel.all():
-                    if feedobj_rlove.id == reel.id:
-                        pass
-                    else:
-                        feedObj.feedLovedReel.add(reel)
-                        feedObj.save()
-            else:
-                feedObj.feedLovedReel.add(reel)
-                feedObj.save()
 
-        except:
-            feedObj = ReelFeed.objects.create(feedUser = user)
-            feedObj.feedLovedReel.add(reel)
-            feedObj.save()
+        # add to user's feed or create
+        _add_to_feed_m2m_or_create(ReelFeed, user, 'feedCelebratedReel', reel)
+
+        # activity row
         try:
-            activityObj = get_object_or_404(ReelReactionActivityFeed,doneByUser = user,reel=reel,currentUser=reel.reel_owner,action="lov")                
-        except:
-            activityObj = ReelReactionActivityFeed.objects.create(currentUser = reel.reel_owner, doneByUser = self.request.user, reel=reel, action = "lov")
-            activityObj.save()
-        
+            activity, created = ReelReactionActivityFeed.objects.get_or_create(
+                currentUser=reel.reel_owner, doneByUser=user, reel=reel, action="cel"
+            )
+            if created:
+                activity.save()
+        except Exception:
+            logger.exception("Failed creating ReelReactionActivityFeed on celebrate")
+
+        # friend feed
         try:
-            r_friendfeed = get_object_or_404(FriendReelActivityFeed,ownerUser = self.request.user,reel_id=reelId,action="rlov")                
-        except:
-            r_friendfeed = FriendReelActivityFeed.objects.create(ownerUser = self.request.user,reel_id=reelId,action="rlov")
-            friend_list = Friend.objects.friends(self.request.user)
-            for friend in friend_list:
+            r_friendfeed, created = FriendReelActivityFeed.objects.get_or_create(ownerUser=request.user, reel_id=reelId, action="rcel")
+            for friend in Friend.objects.friends(request.user):
                 r_friendfeed.forUser.add(friend)
             r_friendfeed.save()
-        serializer_context = {"request": request}
-        serializer = self.serializer_class(reel, context=serializer_context)
+        except Exception:
+            logger.exception("Failed creating FriendReelActivityFeed on celebrate")
 
-        return Response(serializer.data, status=status.HTTP_200_OK)
-    
+        return Response(ReelSerializer(reel, context={"request": request}).data, status=status.HTTP_200_OK)
+
+
+class ReelLoveAPIView(ReelReactionBaseAPIView):
+    """
+    Add/remove 'love' reaction on a Reel.
+    POST -> add love
+    DELETE -> remove love
+    """
+    def delete(self, request, reelId):
+        reel = get_object_or_404(Reel, id=reelId)
+        user = request.user
+        reel.loves.remove(user)
+        reel.save()
+
+        _remove_from_feed_m2m(ReelFeed, user, 'feedLovedReel', reel)
+
+        try:
+            activity = ReelReactionActivityFeed.objects.filter(doneByUser=user, reel=reel, currentUser=reel.reel_owner, action="lov").first()
+            if activity:
+                activity.action = "ulv"
+                activity.save()
+        except Exception:
+            logger.exception("Failed updating ReelReactionActivityFeed on unlove")
+
+        try:
+            r_friendfeed = FriendReelActivityFeed.objects.filter(ownerUser=request.user, reel_id=reelId).first()
+            if r_friendfeed:
+                r_friendfeed.action = "rulo"
+                for friend in Friend.objects.friends(request.user):
+                    r_friendfeed.forUser.add(friend)
+                r_friendfeed.save()
+        except Exception:
+            logger.exception("Failed updating FriendReelActivityFeed on unlove")
+
+        return Response(ReelSerializer(reel, context={"request": request}).data, status=status.HTTP_200_OK)
+
+    def post(self, request, reelId):
+        reel = get_object_or_404(Reel, id=reelId)
+        user = request.user
+        reel.loves.add(user)
+        reel.save()
+
+        _add_to_feed_m2m_or_create(ReelFeed, user, 'feedLovedReel', reel)
+
+        try:
+            activity, created = ReelReactionActivityFeed.objects.get_or_create(
+                currentUser=reel.reel_owner, doneByUser=user, reel=reel, action="lov"
+            )
+            if created:
+                activity.save()
+        except Exception:
+            logger.exception("Failed creating ReelReactionActivityFeed on love")
+
+        try:
+            r_friendfeed, created = FriendReelActivityFeed.objects.get_or_create(ownerUser=request.user, reel_id=reelId, action="rlov")
+            for friend in Friend.objects.friends(request.user):
+                r_friendfeed.forUser.add(friend)
+            r_friendfeed.save()
+        except Exception:
+            logger.exception("Failed creating FriendReelActivityFeed on love")
+
+        return Response(ReelSerializer(reel, context={"request": request}).data, status=status.HTTP_200_OK)
+
 
 class UserStoryFeed(APIView):
     serializer_class = StoryFeedSerializer
@@ -1080,131 +889,45 @@ class UserStoryFeed(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = (JWTCookieAuthentication,)
 
-    def get(self,request):
-        queryset = self.queryset.filter(feedUser=request.user)
-        
-        
-        liked_stories = []
-        loved_stories = []
-        celebrated_stories = []
-        visited_stories = []
-        if queryset.count() != 0 and queryset.count() < 10:
-            feed = queryset
-            # print((feed[0].feedLikedStory.all())[0].id)
-            for item in feed:
-                for data1 in item.feedLikedStory.all():
-                    liked_stories.append(data1.id)
-                for data2 in item.feedLovedStory.all():
-                    loved_stories.append(data2.id)
-                for data3 in item.feedCelebratedStory.all():
-                    celebrated_stories.append(data3.id)
-                for data4 in item.feedVisitedStory.all():
-                    user_wall = PromotedToWallModel.objects.filter(content_id=data4.id,for_user=request.user).first()
+    def _collect_feed_ids(self, feed_qs, request_user):
+        liked, loved, celebrated, visited = [], [], [], []
+        for item in feed_qs:
+            liked += [s.id for s in item.feedLikedStory.all()]
+            loved += [s.id for s in item.feedLovedStory.all()]
+            celebrated += [s.id for s in item.feedCelebratedStory.all()]
+            for v in item.feedVisitedStory.all():
+                visited.append(v.id)
+                try:
+                    user_wall = PromotedToWallModel.objects.filter(content_id=v.id, for_user=request_user).first()
                     if user_wall:
-                        
-                        user_wall.content_type == "story"
-                        user_wall.title = data4.title
+                        user_wall.content_type = "story"
+                        user_wall.title = getattr(v, "title", "")
                         user_wall.save()
                     else:
-                        PromotedToWallModel.objects.create(
-                            for_user=request.user,  # Assuming the primary key should match the user ID
-                            content_id=data4.id,
-                            content_type="story"
-                        )
-                    visited_stories.append(data4.id)
-                if len(liked_stories+loved_stories+celebrated_stories+visited_stories) == 0:
-                    item.delete()
-            feed_ids = liked_stories + loved_stories + celebrated_stories + visited_stories
-            feed_stories = Story.objects.filter(id__in = feed_ids)
-            feed_stories = feed_stories.union(Story.objects.exclude(owner=request.user)).order_by('-updated_at')
-            story_data = StorySerializer(feed_stories,many=True).data
-            comment_data = []
-            for story_feed_item in story_data:            
-                for key, value in story_feed_item.items():
-                    if key == "id":
-                        story_item = get_object_or_404(Story,pk=value)
-                        story_comment_num = story_item.comments.all().count()
-                        comment_object = {
-                            "story_id": value,
-                            "num_comments": story_comment_num
-                        }
+                        PromotedToWallModel.objects.create(for_user=request_user, content_id=v.id, content_type="story", title=getattr(v, "title", ""))
+                except Exception:
+                    logger.exception("Failed handling PromotedToWallModel for story %s", v.id)
+            # if nothing in item, delete it to cleanup
+            if item.feedLikedStory.count() + item.feedLovedStory.count() + item.feedCelebratedStory.count() + item.feedVisitedStory.count() == 0:
+                item.delete()
+        return list(dict.fromkeys(liked + loved + celebrated + visited))  # unique-preserve order
 
-                        comment_data.append(comment_object)
-            
-            response_data = {
-                "feed_stories":story_data,
-                "feed_stories_comments":comment_data
-            }
-             
-            return Response(response_data, status=status.HTTP_200_OK)
-        elif queryset.count() > 10:
-            feed = queryset
-            # print((feed[0].feedLikedStory.all())[0].id)
-            for item in feed:
-                for data1 in item.feedLikedStory.all():
-                    liked_stories.append(data1.id)
-                for data2 in item.feedLovedStory.all():
-                    loved_stories.append(data2.id)
-                for data3 in item.feedCelebratedStory.all():
-                    celebrated_stories.append(data3.id)
-                for data4 in item.feedVisitedStory.all():
-                    user_wall = PromotedToWallModel.objects.filter(content_id=data4.id,for_user=request.user).first()
-                    if user_wall:
-                        user_wall.content_type == "story"
-
-                        user_wall.title = data4.title
-                        user_wall.save()
-                    else:
-                        PromotedToWallModel.objects.create(
-                            for_user=request.user,  # Assuming the primary key should match the user ID
-                            content_id=data4.id,
-                            content_type="story"
-                        )
-                    visited_stories.append(data4.id)
-                if len(liked_stories+loved_stories+celebrated_stories+visited_stories) == 0:
-                    item.delete()
-            feed_ids = liked_stories + loved_stories + celebrated_stories + visited_stories
-            feed_stories = Story.objects.filter(id__in = feed_ids).order_by('-updated_at').distinct()
-            story_data = StorySerializer(feed_stories,many=True).data
-            comment_data = []
-            for story_feed_item in story_data:            
-                for key, value in story_feed_item.items():
-                    if key == "id":
-                        story_item = get_object_or_404(Story,pk=value)
-                        story_comment_num = story_item.comments.all().count()
-                        comment_object = {
-                            "story_id": value,
-                            "num_comments": story_comment_num
-                        }
-                        comment_data.append(comment_object)
-            
-            response_data = {
-                "feed_stories":story_data,
-                "feed_stories_comments":comment_data
-            }
-             
-            return Response(response_data, status=status.HTTP_200_OK)
-        else:
+    def get(self, request):
+        feed_qs = self.queryset.filter(feedUser=request.user)
+        if not feed_qs.exists():
             feed_stories = Story.objects.exclude(owner=request.user).order_by('-updated_at').distinct()
-            story_data = StorySerializer(feed_stories,many=True).data
-            comment_data = []
-            for story_feed_item in story_data:            
-                for key, value in story_feed_item.items():
-                    if key == "id":
-                        story_item = get_object_or_404(Story,pk=value)
-                        story_comment_num = story_item.comments.all().count()
-                        comment_object = {
-                            "story_id": value,
-                            "num_comments": story_comment_num
-                        }
-                        comment_data.append(comment_object)
-            
-            response_data = {
-                "feed_stories":story_data,
-                "feed_stories_comments":comment_data
-            }
-             
-            return Response(response_data, status=status.HTTP_200_OK)
+        else:
+            feed_ids = self._collect_feed_ids(feed_qs, request.user)
+            if feed_ids:
+                feed_stories = Story.objects.filter(id__in=feed_ids).order_by('-updated_at').distinct()
+            else:
+                feed_stories = Story.objects.exclude(owner=request.user).order_by('-updated_at').distinct()
+        serializer_data = StorySerializer(feed_stories, many=True).data
+        comment_data = []
+        for item in feed_stories:
+            comment_data.append({"story_id": str(item.id), "num_comments": item.comments.count()})
+        return Response({"feed_stories": serializer_data, "feed_stories_comments": comment_data}, status=status.HTTP_200_OK)
+
 
 class UserReelFeed(APIView):
     serializer_class = ReelFeedSerializer
@@ -1212,363 +935,201 @@ class UserReelFeed(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = (JWTCookieAuthentication,)
 
-    def get(self,request):
-        queryset = self.queryset.filter(feedUser=request.user)
-
-        liked_reels = []
-        loved_reels = []
-        celebrated_reels = []
-        visited_reels = []
-        if queryset.count() != 0 and queryset.count() < 10:
-            feed = queryset
-            # print((feed[0].feedLikedStory.all())[0].id)
-            for item in feed:
-                for data1 in item.feedLikedReel.all():
-                    liked_reels.append(data1.id)
-                for data2 in item.feedLovedReel.all():
-                    loved_reels.append(data2.id)
-                for data3 in item.feedCelebratedReel.all():
-                    celebrated_reels.append(data3.id)
-                for data4 in item.feedVisitedReel.all():
-                    print(data4)
-                    user_wall = PromotedToWallModel.objects.filter(content_id=data4.id,for_user=request.user).first()
+    def _collect_reel_ids(self, feed_qs, request_user):
+        liked, loved, celebrated, visited = [], [], [], []
+        for item in feed_qs:
+            liked += [r.id for r in item.feedLikedReel.all()]
+            loved += [r.id for r in item.feedLovedReel.all()]
+            celebrated += [r.id for r in item.feedCelebratedReel.all()]
+            for v in item.feedVisitedReel.all():
+                visited.append(v.id)
+                try:
+                    user_wall = PromotedToWallModel.objects.filter(content_id=v.id, for_user=request_user).first()
                     if user_wall:
-                        user_wall.content_type == "reel"
-                        user_wall.title = data4.caption
+                        user_wall.content_type = "reel"
+                        user_wall.title = getattr(v, "caption", "")
                         user_wall.save()
                     else:
-                        PromotedToWallModel.objects.create(
-                            for_user=request.user,  # Assuming the primary key should match the user ID
-                            content_id=data4.id,
-                            content_type="reel"
-                        )
-                    visited_reels.append(data4.id)
-                if len(liked_reels+loved_reels+celebrated_reels+visited_reels) == 0:
-                    item.delete()
-            feed_ids = liked_reels+loved_reels+celebrated_reels+visited_reels
-            feed_reels = Reel.objects.filter(id__in = feed_ids)
-            feed_reels = feed_reels.union(Reel.objects.exclude(reel_owner=request.user))
-            story_ids = []
-            for feed in feed_reels:
-                for story in feed.reels.all():
-                    story_ids.append(story.id)
-            stories = Story.objects.filter(id__in = story_ids).order_by('-updated_at').distinct()
-            
-            story_data = StorySerializer(stories,many=True).data
-            comment_data = []
-            for story_feed_item in story_data:            
-                for key, value in story_feed_item.items():
-                    if key == "id":
-                        story_item = get_object_or_404(Story,pk=value)
-                        story_comment_num = story_item.comments.all().count()
-                        comment_object = {
-                            "story_id": value,
-                            "num_comments": story_comment_num
-                        }
-                        comment_data.append(comment_object)
-            
-            response_data = {
-                "feed_stories":story_data,
-                "feed_stories_comments":comment_data
-            }
-             
-            return Response(response_data, status=status.HTTP_200_OK)
-        elif queryset.count() > 10:
-            feed = queryset
-            # print((feed[0].feedLikedStory.all())[0].id)
-            for item in feed:
-                for data1 in item.feedLikedReel.all():
-                    liked_reels.append(data1.id)
-                for data2 in item.feedLovedReel.all():
-                    loved_reels.append(data2.id)
-                for data3 in item.feedCelebratedReel.all():
-                    celebrated_reels.append(data3.id)
-                for data4 in item.feedVisitedReel.all():
-                    user_wall = PromotedToWallModel.objects.filter(content_id=data4.id,for_user=request.user).first()
-                    if user_wall:
-                        user_wall.content_type == "reel"
+                        PromotedToWallModel.objects.create(for_user=request_user, content_id=v.id, content_type="reel", title=getattr(v, "caption", ""))
+                except Exception:
+                    logger.exception("Failed handling PromotedToWallModel for reel %s", v.id)
+            if item.feedLikedReel.count() + item.feedLovedReel.count() + item.feedCelebratedReel.count() + item.feedVisitedReel.count() == 0:
+                item.delete()
+        return list(dict.fromkeys(liked + loved + celebrated + visited))
 
-                        user_wall.title = data4.caption
-                        user_wall.save()
-                    else:
-                        PromotedToWallModel.objects.create(
-                            for_user=request.user,  # Assuming the primary key should match the user ID
-                            content_id=data4.id,
-                            content_type="reel"
-                        )
-                    visited_reels.append(data4.id)
-
-                if len(liked_reels+loved_reels+celebrated_reels+visited_reels) == 0:
-                    item.delete()
-            feed_ids = liked_reels+loved_reels+celebrated_reels+visited_reels
-            feed_reels = Reel.objects.filter(id__in = feed_ids)
-            story_ids = []
-            for feed in feed_reels:
-                for story in feed.reels.all():
-                    story_ids.append(story.id)
-            stories = Story.objects.filter(id__in = story_ids).order_by('-updated_at').distinct()
-            story_data = StorySerializer(stories,many=True).data
-            comment_data = []
-            for story_feed_item in story_data:            
-                for key, value in story_feed_item.items():
-                    if key == "id":
-                        story_item = get_object_or_404(Story,pk=value)
-                        story_comment_num = story_item.comments.all().count()
-                        comment_object = {
-                            "story_id": value,
-                            "num_comments": story_comment_num
-                        }
-                        comment_data.append(comment_object)
-            
-            response_data = {
-                "feed_stories":story_data,
-                "feed_stories_comments":comment_data
-            }
-             
-            return Response(response_data, status=status.HTTP_200_OK)
-        else:
+    def get(self, request):
+        feed_qs = self.queryset.filter(feedUser=request.user)
+        if not feed_qs.exists():
             feed_reels = Reel.objects.exclude(reel_owner=request.user)
+            # assemble stories referenced by reels
             story_ids = []
-            for feed in feed_reels:
-                for story in feed.reels.all():
-                    story_ids.append(story.id)
-            stories = Story.objects.filter(id__in = story_ids).order_by('-updated_at').distinct()
-            story_data = StorySerializer(stories,many=True).data
-            comment_data = []
-            for story_feed_item in story_data:            
-                for key, value in story_feed_item.items():
-                    if key == "id":
-                        story_item = get_object_or_404(Story,pk=value)
-                        story_comment_num = story_item.comments.all().count()
-                        comment_object = {
-                            "story_id": value,
-                            "num_comments": story_comment_num
-                        }
-                        user_wall = PromotedToWallModel.objects.filter(content_id=value,pk=request.user.id)
-                        comment_data.append(comment_object)
-            
-            response_data = {
-                "feed_stories":story_data,
-                "feed_stories_comments":comment_data
-            }
-             
-            return Response(response_data, status=status.HTTP_200_OK)
-        
+            for r in feed_reels:
+                story_ids += [s.id for s in r.reels.all()]
+            stories = Story.objects.filter(id__in=story_ids).order_by('-updated_at').distinct()
+        else:
+            feed_ids = self._collect_reel_ids(feed_qs, request.user)
+            if feed_ids:
+                feed_reels = Reel.objects.filter(id__in=feed_ids)
+                # assemble stories referenced by these reels
+                story_ids = []
+                for r in feed_reels:
+                    story_ids += [s.id for s in r.reels.all()]
+                stories = Story.objects.filter(id__in=story_ids).order_by('-updated_at').distinct()
+            else:
+                feed_reels = Reel.objects.exclude(reel_owner=request.user)
+                story_ids = []
+                for r in feed_reels:
+                    story_ids += [s.id for s in r.reels.all()]
+                stories = Story.objects.filter(id__in=story_ids).order_by('-updated_at').distinct()
+
+        serializer_data = StorySerializer(stories, many=True).data
+        comment_data = [{"story_id": str(s.id), "num_comments": s.comments.count()} for s in stories]
+        return Response({"feed_stories": serializer_data, "feed_stories_comments": comment_data}, status=status.HTTP_200_OK)
+
 
 class GetStoryFeedDetailView(mixins.CreateModelMixin, viewsets.GenericViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = (JWTCookieAuthentication,)
-    def get_object(self,request,id):
+
+    def get_object(self, request, id):
         story_obj = get_object_or_404(Story, pk=id)
-        print(request.user)
         try:
-            feedObj = get_object_or_404(StoryFeed,feedUser=request.user)
-            
-            if len(feedObj.feedVisitedStory.all()) > 0:
-                for storyvisitfeed in feedObj.feedVisitedStory.all():
-                    if str(storyvisitfeed.id) == str(story_obj.id):
+            feed_obj, created = StoryFeed.objects.get_or_create(feedUser=request.user)
+            if not feed_obj.feedVisitedStory.filter(pk=story_obj.pk).exists():
+                feed_obj.feedVisitedStory.add(story_obj)
+                feed_obj.save()
+        except Exception:
+            logger.exception("Failed updating StoryFeed visited list")
+        return Response(StorySerializer(story_obj).data, status=status.HTTP_200_OK)
 
-                        pass
-                    else:
-                        feedObj.feedVisitedStory.add(story_obj)
-
-                        feedObj.save()
-                else:
-                    pass                
-
-        except:
-            feedObj = StoryFeed.objects.create(feedUser = request.user)
-            feedObj.feedVisitedStory.add(story_obj)
-            feedObj.save()
-
-        data = StorySerializer(story_obj).data
-        return Response(data, status=status.HTTP_200_OK)
 
 class GetReelFeedDetailView(mixins.CreateModelMixin, viewsets.GenericViewSet):
     permission_classes = [IsAuthenticated]
     authentication_classes = (JWTCookieAuthentication,)
-    def get_object(self,request,id):
+
+    def get_object(self, request, id):
         reel_obj = get_object_or_404(Reel, pk=id)
         try:
-            feedObj = get_object_or_404(ReelFeed,feedUser=request.user)
-            if len(feedObj.feedVisitedReel.all()) > 0:
-                for reelvisitfeed in feedObj.feedVisitedReel.all():
-                    if str(reelvisitfeed.id) == str(reel_obj.id):
+            feed_obj, created = ReelFeed.objects.get_or_create(feedUser=request.user)
+            if not feed_obj.feedVisitedReel.filter(pk=reel_obj.pk).exists():
+                feed_obj.feedVisitedReel.add(reel_obj)
+                feed_obj.save()
+        except Exception:
+            logger.exception("Failed updating ReelFeed visited list")
+        return Response(ReelSerializer(reel_obj).data, status=status.HTTP_200_OK)
 
-                        pass
-                    else:
-                        feedObj.feedVisitedReel.add(reel_obj)
 
-                        feedObj.save()
-            else:
-                pass                
-
-        except:
-            feedObj = ReelFeed.objects.create(feedUser = request.user)
-            feedObj.feedVisitedReel.add(reel_obj)
-            feedObj.save()
-        data = ReelSerializer(reel_obj).data
-        return Response(data, status=status.HTTP_200_OK)
-    
 class reactionsOnUserStoryActivity(APIView):
     serializer_class = StoryReactionActivitySerializer
     permission_classes = [IsAuthenticated]
     authentication_classes = (JWTCookieAuthentication,)
-    
-    def get(self,request):
-        try:
-            queryset = StoryReactionActivityFeed.objects.filter(currentUser=self.request.user).order_by('-updated_at')
-            stories = Story.objects.filter(owner=self.request.user)   
-            if queryset.count() == 0:
-                feeddata = []
-                for story in stories:
-                    if story.likes.count() + story.celebrates.count() + story.loves.count() > 0:
-                        if story.likes.count() > 0 :
-                            for like in story.likes.all():
-                                saf = StoryReactionActivityFeed.objects.create(currentUser = self.request.user, doneByUser = get_object_or_404(User,pk=like.id), story=story, action = "lik")
-                                feeddata.append(saf)
-                        else:
-                            pass
 
-                        if story.loves.count() > 0 :
-                            for love in story.loves.all():
-                                saf = StoryReactionActivityFeed.objects.create(currentUser = self.request.user, doneByUser = get_object_or_404(User,pk=love.id), story=story, action = "lov")
-                                feeddata.append(saf)
-                        else:
-                            pass
-                        
-                        if story.celebrates.count() > 0 :
-                            for celebrate in story.celebrates.all() :
-                                saf = StoryReactionActivityFeed.objects.create(currentUser = self.request.user, doneByUser = get_object_or_404(User,pk=celebrate.id), story=story, action = "cel")
-                                feeddata.append(saf)
-                        else:
-                            pass
-                        
-                        serializer = StoryReactionActivitySerializer(feeddata,many=True)
-                        if serializer.is_valid():
-                            return Response(serializer.data, status=status.HTTP_200_OK)
-                        else:
-                            print(serializer.errors)
-                    else:
-                        print("Returning Empty")
-                        return HttpResponse({},status=status.HTTP_204_NO_CONTENT)
-                if feeddata:
-                    serializer = StoryReactionActivitySerializer(feeddata, many=True)
-                    if serializer.is_valid():
-                        return Response(serializer.data, status=status.HTTP_200_OK)
-                    else:
-                        return Response("Bad request - Invalid serializer data", status=status.HTTP_400_BAD_REQUEST)
-                else:
+    def get(self, request):
+        try:
+            queryset = StoryReactionActivityFeed.objects.filter(currentUser=request.user).order_by('-updated_at')
+            if not queryset.exists():
+                # seed from existing story reactions
+                feeddata = []
+                stories = Story.objects.filter(owner=request.user)
+                for story in stories:
+                    for liker in story.likes.all():
+                        feeddata.append(StoryReactionActivityFeed(currentUser=request.user, doneByUser=liker, story=story, action="lik"))
+                    for lover in story.loves.all():
+                        feeddata.append(StoryReactionActivityFeed(currentUser=request.user, doneByUser=lover, story=story, action="lov"))
+                    for celebrator in story.celebrates.all():
+                        feeddata.append(StoryReactionActivityFeed(currentUser=request.user, doneByUser=celebrator, story=story, action="cel"))
+                if not feeddata:
                     return Response({}, status=status.HTTP_204_NO_CONTENT)
+                # since these are unsaved instances created above, return serialized minimal structure
+                serializer = StoryReactionActivitySerializer(feeddata, many=True)
+                return Response(serializer.data, status=status.HTTP_200_OK)
             else:
-                data = StoryReactionActivitySerializer(queryset,many=True).data
+                data = StoryReactionActivitySerializer(queryset, many=True).data
                 return Response(data, status=status.HTTP_200_OK)
         except Exception as e:
-            return Response(f"Bad request - General exception occurred: {e}", status=status.HTTP_400_BAD_REQUEST)
-            
+            logger.exception("Error in reactionsOnUserStoryActivity: %s", e)
+            return Response({"detail": "Internal error"}, status=status.HTTP_400_BAD_REQUEST)
+
 
 class commentsOnUserStoryActivity(APIView):
     serializer_class = StoryCommentActivitySerializer
     queryset = StoryCommentActivityFeed.objects.all()
     permission_classes = [IsAuthenticated]
     authentication_classes = (JWTCookieAuthentication,)
-    
-    def get(self,request):
 
-        queryset = self.queryset.filter(commentedOnUser=self.request.user).order_by('-updated_at')
-        data = StoryCommentActivitySerializer(queryset,many=True).data
+    def get(self, request):
+        queryset = self.queryset.filter(commentedOnUser=request.user).order_by('-updated_at')
+        data = StoryCommentActivitySerializer(queryset, many=True).data
         return Response(data, status=status.HTTP_200_OK)
-           
+
+
 class reactionsOnUserReelActivity(APIView):
     serializer_class = ReelReactionActivitySerializer
     permission_classes = [IsAuthenticated]
     authentication_classes = (JWTCookieAuthentication,)
-    
-    def get(self,request):
-        try: 
-            queryset = ReelReactionActivityFeed.objects.filter(currentUser=self.request.user).order_by('-updated_at')
-            print("Passed 1")         
-            reels = Reel.objects.filter(reel_owner=self.request.user)
-            print("Passed 2")         
-            if queryset.count() == 0:
+
+    def get(self, request):
+        try:
+            queryset = ReelReactionActivityFeed.objects.filter(currentUser=request.user).order_by('-updated_at')
+            if not queryset.exists():
                 feeddata = []
+                reels = Reel.objects.filter(reel_owner=request.user)
                 for reel in reels:
-                    if reel.likes.count() + reel.celebrates.count() + reel.loves.count() > 0:
-                        if reel.likes.count() > 0 :
-                            for like in reel.likes.all():
-                                raf = ReelReactionActivityFeed.objects.create(currentUser = self.request.user, doneByUser = get_object_or_404(User,pk=like.id), reel=reel, action = "lik")
-                                feeddata.append(raf)
-                        else:
-                            pass
-                        if reel.loves.count() > 0 :
-                            for love in reel.loves.all():
-                                raf = ReelReactionActivityFeed.objects.create(currentUser = self.request.user, doneByUser = get_object_or_404(User,pk=love.id), reel=reel, action = "lov")
-                                feeddata.append(raf)
-                        else:
-                            pass
-                        if reel.celebrates.count() > 0 :
-                            for celebrate in reel.celebrates.all() :
-                                raf = ReelReactionActivityFeed.objects.create(currentUser = self.request.user, doneByUser = get_object_or_404(User,pk=celebrate.id), reel=reel, action = "cel")
-                                feeddata.append(raf)
-                        else:
-                            pass
-                        
-
-
-                    else:
-                        return HttpResponse({},status=status.HTTP_204_NO_CONTENT)
-                if feeddata:
-                    serializer = ReelReactionActivitySerializer(feeddata, many=True)
-                    if serializer.is_valid():
-                        return Response(serializer.data, status=status.HTTP_200_OK)
-                    else:
-                        return Response("Bad request - Invalid serializer data", status=status.HTTP_400_BAD_REQUEST)
-                else:
+                    for liker in reel.likes.all():
+                        feeddata.append(ReelReactionActivityFeed(currentUser=request.user, doneByUser=liker, reel=reel, action="lik"))
+                    for lover in reel.loves.all():
+                        feeddata.append(ReelReactionActivityFeed(currentUser=request.user, doneByUser=lover, reel=reel, action="lov"))
+                    for celebrator in reel.celebrates.all():
+                        feeddata.append(ReelReactionActivityFeed(currentUser=request.user, doneByUser=celebrator, reel=reel, action="cel"))
+                if not feeddata:
                     return Response({}, status=status.HTTP_204_NO_CONTENT)
+                serializer = ReelReactionActivitySerializer(feeddata, many=True)
+                return Response(serializer.data, status=status.HTTP_200_OK)
             else:
-                print("From Queryset Feed")
-                data = ReelReactionActivitySerializer(queryset,many=True).data
+                data = ReelReactionActivitySerializer(queryset, many=True).data
                 return Response(data, status=status.HTTP_200_OK)
-            
         except Exception as e:
-            return Response(f"Bad request - General exception occurred: {e}", status=status.HTTP_400_BAD_REQUEST)
-    
+            logger.exception("Error in reactionsOnUserReelActivity: %s", e)
+            return Response({"detail": "Internal error"}, status=status.HTTP_400_BAD_REQUEST)
+
+
 class commentsOnUserReelActivity(APIView):
     serializer_class = ReelCommentActivitySerializer
     queryset = ReelCommentActivityFeed.objects.all()
     permission_classes = [IsAuthenticated]
     authentication_classes = (JWTCookieAuthentication,)
-    
-    def get(self,request):
 
-        queryset = self.queryset.filter(commentedOnUser=self.request.user).order_by('-updated_at')
-        data = ReelCommentActivitySerializer(queryset,many=True).data
+    def get(self, request):
+        queryset = self.queryset.filter(commentedOnUser=request.user).order_by('-updated_at')
+        data = ReelCommentActivitySerializer(queryset, many=True).data
         return Response(data, status=status.HTTP_200_OK)
-        
+
+
 class FriendStoryActivity(APIView):
     serializer_class = FriendStoryActivitySerializer
     queryset = FriendStoryActivityFeed.objects.all()
     permission_classes = [IsAuthenticated]
     authentication_classes = (JWTCookieAuthentication,)
-    
-    def get(self,request):
-        friend_id = self.request.query_params.get("friend_id")
+
+    def get(self, request):
+        friend_id = request.query_params.get("friend_id")
         queryset = self.queryset.filter(ownerUser=friend_id).order_by('-updated_at')
-        data = FriendStoryActivitySerializer(queryset,many=True).data
+        data = FriendStoryActivitySerializer(queryset, many=True).data
         return Response(data, status=status.HTTP_200_OK)
+
 
 class FriendReelActivity(APIView):
     serializer_class = FriendReelActivitySerializer
     queryset = FriendReelActivityFeed.objects.all()
     permission_classes = [IsAuthenticated]
     authentication_classes = (JWTCookieAuthentication,)
-    
-    def get(self,request):
-        friend_id = self.request.query_params.get("friend_id")
+
+    def get(self, request):
+        friend_id = request.query_params.get("friend_id")
         queryset = self.queryset.filter(ownerUser=friend_id).order_by('-updated_at')
-        data = FriendReelActivitySerializer(queryset,many=True).data
+        data = FriendReelActivitySerializer(queryset, many=True).data
         return Response(data, status=status.HTTP_200_OK)
-    
+
 
 class ImageModelFeed(APIView):
     serializer_class = ImageModelSerializer
@@ -1576,51 +1137,45 @@ class ImageModelFeed(APIView):
     permission_classes = [IsAuthenticated]
     authentication_classes = (JWTCookieAuthentication,)
 
-    def get(self,request):
-        owner_id = self.request.user
-        queryset = self.queryset.filter(owner=owner_id).order_by('-updated_at')
-        feeddata = ImageModelSerializer(queryset,many=True).data
-        returnObj = {}
-        storyObj = []
-        reelObj = []
-
-        for i in range(len(feeddata)):
-            print(feeddata[i]["linked_id"])
-            if feeddata[i]["linked_to"] == "story":
-                storyreturnObj = {}
-                try: 
-                    story_item = get_object_or_404(Story,pk=feeddata[i]["linked_id"])
-                    comment_items = StoryComment.objects.filter(story=story_item)
-                    storyreturnObj["story_id"] = feeddata[i]["linked_id"]
-                    storyreturnObj["story_title"] = story_item.title
-                    storyreturnObj["story_image"] = 'http://localhost:8000' + feeddata[i]["image_data"]
-                    storyreturnObj["story_likes"] = story_item.likes.all().count()
-                    storyreturnObj["story_loves"] = story_item.loves.all().count()
-                    storyreturnObj["story_celebrates"] = story_item.celebrates.all().count()
-                    storyreturnObj["story_comments"] = comment_items.all().count()
-                    storyObj.append(storyreturnObj)
-                except:
-                    pass
-
-            elif feeddata[i]["linked_to"] == "reels":
-                reelreturnObj = {}
+    def get(self, request):
+        owner = request.user
+        qs = self.queryset.filter(owner=owner).order_by('-updated_at')
+        feeddata = ImageModelSerializer(qs, many=True).data
+        story_photos, reel_photos = [], []
+        for item in feeddata:
+            linked_to = item.get("linked_to")
+            linked_id = item.get("linked_id")
+            image_path = item.get("image_data")
+            if linked_to == "story":
                 try:
-                    reel_item = get_object_or_404(Reel,pk=feeddata[i]["linked_id"])
-                    comment_items = ReelComment.objects.filter(reel=reel_item)
-                    reelreturnObj["reel_id"] = feeddata[i]["linked_id"]
-                    reelreturnObj["reel_caption"] = reel_item.caption
-                    reelreturnObj["reel_image"] = 'http://localhost:8000' + feeddata[i]["image_data"]
-                    reelreturnObj["reel_likes"] = reel_item.likes.all().count()
-                    reelreturnObj["reel_loves"] = reel_item.loves.all().count()
-                    reelreturnObj["reel_celebrates"] = reel_item.celebrates.all().count()
-                    reelreturnObj["reel_comments"] = comment_items.all().count()
-                    reelObj.append(reelreturnObj)
-                except:
-                    pass
-            else:
-                pass
-
-        returnObj["storyphotos"] = storyObj
-        returnObj["reelphotos"] = reelObj
-        print(reelObj)
-        return Response(returnObj, status=status.HTTP_200_OK)
+                    story_item = Story.objects.get(pk=linked_id)
+                    story_photos.append({
+                        "story_id": linked_id,
+                        "story_title": story_item.title,
+                        "story_image": request.build_absolute_uri(image_path) if image_path else None,
+                        "story_likes": story_item.likes.count(),
+                        "story_loves": story_item.loves.count(),
+                        "story_celebrates": story_item.celebrates.count(),
+                        "story_comments": story_item.comments.count(),
+                    })
+                except Story.DoesNotExist:
+                    logger.debug("Story no longer exists for ImageModel %s", item.get("id"))
+                except Exception:
+                    logger.exception("Error building story photo entry for ImageModel %s", item.get("id"))
+            elif linked_to == "reels":
+                try:
+                    reel_item = Reel.objects.get(pk=linked_id)
+                    reel_photos.append({
+                        "reel_id": linked_id,
+                        "reel_caption": reel_item.caption,
+                        "reel_image": request.build_absolute_uri(image_path) if image_path else None,
+                        "reel_likes": reel_item.likes.count(),
+                        "reel_loves": reel_item.loves.count(),
+                        "reel_celebrates": reel_item.celebrates.count(),
+                        "reel_comments": ReelComment.objects.filter(reel=reel_item).count()
+                    })
+                except Reel.DoesNotExist:
+                    logger.debug("Reel no longer exists for ImageModel %s", item.get("id"))
+                except Exception:
+                    logger.exception("Error building reel photo entry for ImageModel %s", item.get("id"))
+        return Response({"storyphotos": story_photos, "reelphotos": reel_photos}, status=status.HTTP_200_OK)

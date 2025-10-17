@@ -121,8 +121,8 @@ class Reel(TimeStampedModel):
     """Tag to be used for a recipe"""
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     caption = models.CharField(max_length=255)
-    # image = models.ImageField(null=True,upload_to=reel_image_file_path)
-    image = models.URLField(max_length=500)
+    image = models.ImageField(null=True,upload_to=reel_image_file_path)
+    # image = models.URLField(max_length=500)
     reel_owner = models.ForeignKey("User",on_delete=models.CASCADE)
     likes = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="reel_likes",blank=True)
     loves = models.ManyToManyField(settings.AUTH_USER_MODEL, related_name="reel_loves",blank=True)
@@ -144,8 +144,8 @@ class Story(TimeStampedModel):
     title = models.CharField(max_length=50)
     description = models.CharField(max_length=255)
     longDescription = models.TextField()
-    # image = models.ImageField(null=True,upload_to=story_image_file_path)
-    image = models.URLField(max_length=500)
+    image = models.ImageField(null=True,upload_to=story_image_file_path)
+    # image = models.URLField(max_length=500)
     reels = models.ManyToManyField('Reel', related_name='reels')
     tags = models.ManyToManyField('Tag',blank=True)
     owner = models.ForeignKey("User",on_delete=models.CASCADE)
@@ -215,8 +215,8 @@ class ReelComment(TimeStampedModel):
     
 class UserProfile(TimeStampedModel):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="user_profile")
-    # avatar = models.ImageField(null=True,upload_to=profile_image_file_path)
-    avatar = models.URLField(max_length=500)
+    avatar = models.ImageField(null=True,upload_to=profile_image_file_path)
+    # avatar = models.URLField(max_length=500)
     status = models.TextField()
     bio = models.TextField()
     gender = models.CharField(max_length=255)
