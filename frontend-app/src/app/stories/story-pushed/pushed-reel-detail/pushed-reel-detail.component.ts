@@ -12,6 +12,7 @@ import { ReactionInfoDialogComponent } from '../../reaction-info-dialog/reaction
 import { FriendHTTPService } from 'src/app/friends/services/friend.service';
 import { ChatroomHTTPService } from 'src/app/webchat/services/chatroom.service';
 import { ChatroomDialogComponent } from 'src/app/webchat/chatroom-dialog/chatroom-dialog.component';
+import { ChangeDetectorRef } from '@angular/core';
 
 @Component({
   selector: 'app-pushed-reel-detail',
@@ -50,31 +51,28 @@ export class PushedReelDetailComponent implements OnInit{
   chatroom_membership: boolean = false;
   chatroom_owner!:number;
   constructor(private route: ActivatedRoute,private rService: ReelsHTTPService,private dialog: MatDialog,private router: Router,
-    private authService: AuthService,private fService: FriendHTTPService, private chatService: ChatroomHTTPService) {}
+    private authService: AuthService,private fService: FriendHTTPService, private chatService: ChatroomHTTPService,
+    private cd: ChangeDetectorRef,) {}
 
-  ngOnInit(): void {
-    this.route.params
-      .subscribe(
-        (params: Params) => {
-          this.reelId = params['reelId'];
-        }
-      )
-    this.loadData();
+  async ngOnInit(): Promise<void> {
+    this.route.params.subscribe((params: Params) => {
+      this.reelId = params['reelId'];
+    });
+    try {
+      await this.loadData();
+    } catch (err) {
+      console.error('loadData error', err);
+    }
   }
 
   addComment() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = false;
+    
+    dialogConfig.autoFocus = true;
     dialogConfig.minWidth = "800px";
     dialogConfig.disableClose = true;
-    this.friends$.subscribe((friendList: any) => {
-      friendList.forEach((friendItem: any) => {
-        if (friendItem.id == this.loggedInUserId) {
-          this.isFriend = true;
-        }
-      })
 
-    })
+
     this.dialog.open(ReelCommentCreateComponent, dialogConfig)
       .afterClosed()
       .subscribe((val:any) => {
@@ -107,11 +105,14 @@ export class PushedReelDetailComponent implements OnInit{
               approval: "app"
             };
             this.comments.push(newComment);
+            this.cd.markForCheck();
           });
         }
       }
     )
   }
+
+  
 
   addLike() {
 
@@ -187,10 +188,10 @@ export class PushedReelDetailComponent implements OnInit{
 
   showReactionInfo() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = false;
+    
+    dialogConfig.autoFocus = true;
     dialogConfig.minWidth = "800px";
-    dialogConfig.minHeight = "600px";
-    dialogConfig.panelClass = 'custom-dialogbox';
+    dialogConfig.disableClose = false;
     let likeObj: any = {}
     this.likes.forEach((like_user: number) => {
       let fullName;
@@ -226,73 +227,193 @@ export class PushedReelDetailComponent implements OnInit{
 
   }
 
+  // private async loadData() {
+
+
+  //   const user$ = this.authService.user()
+  //   this.user = await lastValueFrom(user$);
+  //   this.loggedInUserId = this.user.id;
+
+
+  //   this.reel$ = this.rService.fetchReelforFeed(this.reelId);
+  //   this.reel = await lastValueFrom(this.reel$);
+  //   this.reelOwner = this.reel.reel_owner;
+  //   if (this.reelOwner === +this.loggedInUserId) {
+  //     this.showreactionAction = false;
+  //   }
+  //   const publicUser$ = this.authService.publicUser(this.reelOwner);
+  //   this.publicUser = await lastValueFrom(publicUser$);
+  //   this.fullName = this.publicUser.first_name + " " + this.publicUser.last_name;
+
+  //   this.friends$ = this.fService.listFriends();
+  //   this.friends = await lastValueFrom(this.friends$)
+  //   this.friends.forEach((friend: any) => {
+  //     if (friend.id ===this.reelOwner) {
+  //       this.isFriend = true;
+  //     }
+  //   })
+
+
+  //   const comments$ = this.rService.fetchReelComments(this.reelId);
+  //   this.comments = await lastValueFrom(comments$);
+
+  //   this.reel.likes?.forEach((res: any) => {
+  //     this.likes.push(res.id);
+  //   })
+  //   this.reel.loves?.forEach((res: any) => {
+  //     this.loves.push(res.id);
+  //   })
+  //   this.reel.celebrates?.forEach((res: any) => {
+  //     this.celebrates.push(res.id);
+  //   })
+
+  //   this.totalLikes = this.likes.length;
+  //   this.totalLoves = this.loves.length;
+  //   this.totalCelebrates = this.celebrates.length;
+  //   this.likes.forEach((liked_by_id: number) => {
+  //     if (liked_by_id == +this.loggedInUserId) {
+  //       this.showLike = false;
+  //     } else {
+  //       console.log(liked_by_id);
+  //     }
+  //   });
+  //   this.loves.forEach((loved_by_id: number) => {
+  //     if (loved_by_id == +this.loggedInUserId) {
+  //       this.showLove = false;
+  //     } else {
+  //       console.log(loved_by_id);
+  //     }
+  //   });
+  //   this.celebrates.forEach((celebrated_by_id: number) => {
+  //     if (celebrated_by_id == +this.loggedInUserId) {
+  //       this.showCelebrate = false;
+  //     } else {
+  //       console.log(celebrated_by_id);
+  //     }
+  //   });
+
+  //   this.loadChatRelatedData();
+  // }
+
+  // 
+
   private async loadData() {
-
-
-    const user$ = this.authService.user()
+  // get user
+    const user$ = this.authService.user();
     this.user = await lastValueFrom(user$);
     this.loggedInUserId = this.user.id;
 
-
+    // fetch reel (observable + concrete object)
     this.reel$ = this.rService.fetchReelforFeed(this.reelId);
     this.reel = await lastValueFrom(this.reel$);
-    this.reelOwner = this.reel.reel_owner;
-    if (this.reelOwner === +this.loggedInUserId) {
+    this.reelOwner = Number(this.reel.reel_owner);
+
+    // hide reaction controls if owner
+    if (this.reelOwner === this.loggedInUserId) {
       this.showreactionAction = false;
     }
+
+    // public user
     const publicUser$ = this.authService.publicUser(this.reelOwner);
     this.publicUser = await lastValueFrom(publicUser$);
-    this.fullName = this.publicUser.first_name + " " + this.publicUser.last_name;
+    this.fullName = `${this.publicUser.first_name} ${this.publicUser.last_name}`;
 
+    // friends: set local array & lookup
     this.friends$ = this.fService.listFriends();
-    this.friends = await lastValueFrom(this.friends$)
-    this.friends.forEach((friend: any) => {
-      if (friend.id ===this.reelOwner) {
-        this.isFriend = true;
-      }
-    })
+    this.friends = await lastValueFrom(this.friends$);
+    this.isFriend = this.friends.some((f: any) => Number(f.id) === this.reelOwner);
 
-
+    // comments
     const comments$ = this.rService.fetchReelComments(this.reelId);
     this.comments = await lastValueFrom(comments$);
 
-    this.reel.likes?.forEach((res: any) => {
-      this.likes.push(res.id);
-    })
-    this.reel.loves?.forEach((res: any) => {
-      this.loves.push(res.id);
-    })
-    this.reel.celebrates?.forEach((res: any) => {
-      this.celebrates.push(res.id);
-    })
+    // reactions arrays
+    this.likes = [];
+    this.loves = [];
+    this.celebrates = [];
+    (this.reel.likes || []).forEach((res: any) => this.likes.push(Number(res.id)));
+    (this.reel.loves || []).forEach((res: any) => this.loves.push(Number(res.id)));
+    (this.reel.celebrates || []).forEach((res: any) => this.celebrates.push(Number(res.id)));
 
     this.totalLikes = this.likes.length;
     this.totalLoves = this.loves.length;
     this.totalCelebrates = this.celebrates.length;
-    this.likes.forEach((liked_by_id: number) => {
-      if (liked_by_id == +this.loggedInUserId) {
-        this.showLike = false;
-      } else {
-        console.log(liked_by_id);
-      }
-    });
-    this.loves.forEach((loved_by_id: number) => {
-      if (loved_by_id == +this.loggedInUserId) {
-        this.showLove = false;
-      } else {
-        console.log(loved_by_id);
-      }
-    });
-    this.celebrates.forEach((celebrated_by_id: number) => {
-      if (celebrated_by_id == +this.loggedInUserId) {
-        this.showCelebrate = false;
-      } else {
-        console.log(celebrated_by_id);
-      }
-    });
 
-    this.loadChatRelatedData();
+    this.showLike = !this.likes.includes(this.loggedInUserId);
+    this.showLove = !this.loves.includes(this.loggedInUserId);
+    this.showCelebrate = !this.celebrates.includes(this.loggedInUserId);
+
+    // load chatroom related info
+    await this.loadChatRelatedData();
+
+    // ensure template updates (important if OnPush or complex async)
+    this.cd.markForCheck();
   }
+
+  // ---- replace loadChatRelatedData with this version ----
+  // private async loadChatRelatedData() {
+  //   try {
+  //     const resp: any = await lastValueFrom(this.chatService.showChatRooms());
+  //     if (!Array.isArray(resp)) return;
+
+  //     // default flags
+  //     this.chatroomID = -1;
+  //     this.chatroom_owner = -1;
+  //     this.chatroom_membership = false;
+  //     this.canshowJoinChatroom = false;
+  //     this.showINITChatroom = true;
+  //     this.showLeaveChatroom = false;
+  //     this.can_delete_charoom = false;
+
+  //     for (const data of resp) {
+  //       // only consider entries that reference a reel
+  //       if (!data || data.reel == null) continue;
+
+  //       // data.reel may be number or string, compare as strings
+  //       if (String(data.reel) !== String(this.reelId)) continue;
+
+  //       // matched
+  //       this.chatroom_owner = Number(data.owner);
+  //       this.chatroomID = Number(data.id);
+
+  //       // determine if current user is participant
+  //       const participantIds = (data.participants || []).map((p: any) => Number(p.id));
+  //       const amMember = participantIds.includes(this.loggedInUserId);
+  //       this.chatroom_membership = amMember;
+
+  //       // if the visiting user is owner of the reel, don't show join/init
+  //       if (Number(this.reel.reel_owner) === this.loggedInUserId) {
+  //         this.showINITChatroom = false;
+  //         this.canshowJoinChatroom = false;
+  //         this.showLeaveChatroom = false;
+  //       } else {
+  //         // only show join hint if the reel owner is your friend and you're not already a member
+  //         if (!amMember) {
+  //           // reuse existing friend check (isFriend was computed in loadData)
+  //           if (this.isFriend) {
+  //             this.showINITChatroom = false;
+  //             this.canshowJoinChatroom = true;
+  //           }
+  //         } else {
+  //           this.showLeaveChatroom = true;
+  //         }
+  //       }
+
+  //       // ownership grants delete permission
+  //       if (Number(data.owner) === this.loggedInUserId) {
+  //         this.can_delete_charoom = true;
+  //       }
+
+  //       // once we've found the matching room for this reel, break (assuming single room per reel)
+  //       break;
+  //     }
+
+  //     // ensure view updates
+  //     this.cd.markForCheck();
+  //   } catch (err) {
+  //     console.error('loadChatRelatedData error', err);
+  //   }
+  // }
 
   private async loadChatRelatedData() {
     this.chatService.showChatRooms().subscribe((resp:any) => {
@@ -345,12 +466,14 @@ export class PushedReelDetailComponent implements OnInit{
       }
     });
   }
+  // ---- small cleanup in addComment: do NOT resubscribe to friends$ there ----
+  
   createReelChatRoom() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = false;
+    
+    dialogConfig.autoFocus = true;
     dialogConfig.minWidth = "800px";
-    dialogConfig.minHeight = "600px";
-    dialogConfig.panelClass = 'custom-dialogbox';
+    dialogConfig.disableClose = true;
     let reelObj: any = {}
     reelObj = {...this.reel}
     dialogConfig.data = {
@@ -396,10 +519,10 @@ export class PushedReelDetailComponent implements OnInit{
         this.showLeaveChatroom = true;
         this.canshowJoinChatroom = false;
         const dialogConfig = new MatDialogConfig();
-        dialogConfig.autoFocus = false;
+        
+        dialogConfig.autoFocus = true;
         dialogConfig.minWidth = "800px";
-        dialogConfig.minHeight = "600px";
-        dialogConfig.panelClass = 'custom-dialogbox';
+        dialogConfig.disableClose = true;
         let reelObj: any = {}
         reelObj = {...this.reel}
         dialogConfig.data = {

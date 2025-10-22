@@ -45,3 +45,18 @@
 .main-tool-slider button:nth-child(3n + 1) {
   margin: 16px 15px 0px 15px;
 }
+
+/* Theme variables (easy to tweak) */
+:root {
+  --ai-bg: #303030;
+  --ai-surface: #3a3a3a;
+  --ai-accent: #00BCD4;
+  --ai-accent-opaque: rgba(0, 188, 212, 0.12);
+  --ai-text: #ffffff;
+  --ai-muted: #bdbdbd;
+  --ai-danger: #ff6b6b;
+  --ai-radius: 12px;
+  --ai-gap: 10px;
+}
+
+/* Container */

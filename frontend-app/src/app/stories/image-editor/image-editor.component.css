@@ -7,15 +7,7 @@
   height: 5%;
 }
 
-.work-panel {
-  background: #e2e1e0;
-  height: 92%;
-  min-height: 663px;
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
-}
+
 
 .image-picker-container {
   position: relative;
@@ -26,15 +18,31 @@
   height: 78%;
 }
 
+.work-panel {
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+
 .canvas-container {
-  padding: 16px;
   background: #ffffff;
-  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25), 0 10px 10px rgba(0, 0, 0, 0.22);
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  z-index: 1;
+  border: #303030 2px solid;
 }
 
 .toolbar-container {
-  background: #303030;
-  min-width: 208px;
-  max-width: 208px;
-  height: 78%;
+  width: 100%;             /* adjustable: width of the sidebar toolbar */
+  height: 100%;             /* full height of the editor */
+  position: relative;
+  z-index: 999;
+  pointer-events: auto;
+  background: #202020;      /* matches dark theme */
+  border-left: 1px solid rgba(255,255,255,0.05);
 }
+

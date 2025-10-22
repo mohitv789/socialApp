@@ -9,7 +9,6 @@ import { RouterModule } from '@angular/router';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import {MatDialogModule} from '@angular/material/dialog';
-import { NgImageSliderModule } from 'ng-image-slider';
 import { LoginComponent } from './auth/login/login.component';
 import { RegisterComponent } from './auth/register/register.component';
 import { ResetComponent } from './auth/reset/reset.component';
@@ -46,6 +45,8 @@ import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { GlobalErrorHandler } from '../global-error-handler';
 import { IonicModule } from '@ionic/angular';
+import { FeedService } from './feed-app/feed.service';
+import { FeedAppComponent } from './feed-app/feed-app.component';
 
 @NgModule({
   declarations: [
@@ -68,7 +69,8 @@ import { IonicModule } from '@ionic/angular';
     WebchatComponent,
     ChatroomDialogComponent,
     ChatHistoryComponent,
-    ChatFormComponent
+    ChatFormComponent,
+    FeedAppComponent
   ],
   imports: [
     BrowserModule,
@@ -82,7 +84,6 @@ import { IonicModule } from '@ionic/angular';
     ReactiveFormsModule,
     BrowserAnimationsModule,
     MatDialogModule,
-    NgImageSliderModule,
     MatTabsModule,
     NgbModule,
     MatButtonModule,
@@ -105,6 +106,7 @@ import { IonicModule } from '@ionic/angular';
       multi: true
     },
     UtilService,
+    FeedService
     // { provide: ErrorHandler, useClass: GlobalErrorHandler }
   ],
   bootstrap: [AppComponent]

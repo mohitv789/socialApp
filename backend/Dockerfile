@@ -1,57 +1,45 @@
-# Use official Python Alpine image (you can change to -slim if preferred)
-FROM python:3.12-alpine
+# Dockerfile.slim (recommended)
+FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONFAULTHANDLER=1
+    PYTHONFAULTHANDLER=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DEFAULT_TIMEOUT=120 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# ensure reliable Alpine repos and small retry loop for transient mirror issues
-RUN printf "https://dl-cdn.alpinelinux.org/alpine/v3.22/main\nhttps://dl-cdn.alpinelinux.org/alpine/v3.22/community\n" > /etc/apk/repositories \
- && for i in 1 2 3; do apk update && break || sleep 2; done
-
-# create app dir early, copy requirements first (leverage cache)
-RUN mkdir -p /app /vol/web/static /vol/web/media
 WORKDIR /app
+RUN mkdir -p /app /vol/web/static /vol/web/media
 
-COPY ./requirements.txt /requirements.txt
-COPY ./run.sh /run.sh
+# Install small system deps for Pillow/psycopg2/etc.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+    build-essential \
+    libjpeg-dev \
+    libpq-dev \
+    curl \
+    ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+
+# copy requirements first to leverage caching
+COPY ./requirements.txt /tmp/requirements.txt
+
+# upgrade pip & install deps, prefer wheels
+RUN python -m pip install --upgrade pip setuptools wheel \
+ && /bin/sh -c 'for i in 1 2 3; do pip --default-timeout=120 --retries=10 install --prefer-binary -r /tmp/requirements.txt && break || sleep 3; done' \
+ && rm -f /tmp/requirements.txt
+
+# copy app and run script
 COPY ./app /app
+COPY ./run.sh /run.sh
 
-# Install runtime packages (client/tools) and build deps in a single flow
-# Use a virtual .build-deps package so we can remove heavy build deps afterwards
-RUN apk add --no-cache --virtual .run-deps \
-      libjpeg-turbo \
-      libstdc++ \
-      openblas \
-      libgfortran \
-      postgresql-client || true \
- && apk add --no-cache --virtual .build-deps \
-      build-base \
-      musl-dev \
-      linux-headers \
-      gfortran \
-      zlib-dev \
-      libffi-dev \
-      postgresql-dev \
-      bash \
-      curl \
-      lapack-dev \
-      openblas-dev \
- && python -m pip install --upgrade pip setuptools wheel \
- && pip --default-timeout=60 --retries=10 install --no-cache-dir -r /requirements.txt \
- && apk del .build-deps \
- && rm -rf /var/cache/apk/* /root/.cache/pip
-
-# make run.sh executable and set permissions for volumes
 RUN chmod +x /run.sh \
  && chown -R root:root /app /vol/web \
  && chmod -R 755 /vol/web
 
-EXPOSE 8000
+EXPOSE 9000
 
-# Use a non-root user if desired (uncomment to enable)
-# RUN addgroup -S web && adduser -S web -G web
+# Optionally switch to non-root user here
+# RUN addgroup --system web && adduser --system --ingroup web web
 # USER web
 
 CMD ["/run.sh"]
-
-

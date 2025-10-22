@@ -1,0 +1,64 @@
+<div class="feed-root">
+  <h3>Combined Feed</h3>
+
+  <div *ngIf="error" class="error">{{ error }}</div>
+
+  <section class="activities">
+    <h4>Activities</h4>
+    <div *ngIf="activities.length === 0 && !loading">No recent activity</div>
+    <div *ngFor="let a of activities; trackBy: trackByActivityId" class="activity-item">
+      <div class="actor">{{ a.actor?.name }} <small>({{ a.verb }})</small></div>
+      <div class="target" *ngIf="a.target">
+        <div *ngIf="a.target_type === 'story'">
+          <strong>Story:</strong> {{ a.target.title }}
+        </div>
+        <div *ngIf="a.target_type === 'reel'">
+          <strong>Reel:</strong> {{ a.target.caption }}
+        </div>
+      </div>
+      <div class="meta"><small>{{ a.created_at | date:'short' }}</small></div>
+    </div>
+
+    <div class="load-more">
+      <button (click)="loadMore()" [disabled]="!hasNext || loading">Load more</button>
+    </div>
+  </section>
+
+  <section class="stories" *ngIf="stories && stories.length">
+    <h4>Stories</h4>
+    <div class="card-list">
+      <div class="card" *ngFor="let s of stories">
+        <img *ngIf="s.image" [src]="s.image" alt="story image" />
+        <div class="card-body">
+          <h5>{{ s.title }}</h5>
+          <p>{{ s.description }}</p>
+          <div class="meta">Likes: {{ s.likes }} · Comments: {{ s.num_comments }}</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="reels" *ngIf="reels && reels.length">
+    <h4>Reels</h4>
+    <div class="card-list">
+      <div class="card" *ngFor="let r of reels">
+        <img *ngIf="r.image" [src]="r.image" alt="reel image" />
+        <div class="card-body">
+          <h5>{{ r.caption }}</h5>
+          <div class="meta">Likes: {{ r.likes }} · Comments: {{ r.num_comments }}</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="friend-activities" *ngIf="friendActivities && friendActivities.length">
+    <h4>Friend Activities</h4>
+    <div *ngFor="let f of friendActivities">
+      <div>
+        <strong>User {{ f.ownerUser }}</strong> did <em>{{ f.action }}</em>
+        <span *ngIf="f.story_id"> story {{ f.story_id }}</span>
+        <span *ngIf="f.reel_id"> reel {{ f.reel_id }}</span>
+      </div>
+    </div>
+  </section>
+</div>

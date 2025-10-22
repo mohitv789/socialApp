@@ -2,6 +2,9 @@ from django.db import models
 from django.template.defaultfilters import slugify
 from django.conf import settings
 import uuid, os
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser,BaseUserManager
 from django.db import models
 from django.utils.translation import gettext_lazy as _
@@ -1016,3 +1019,44 @@ class MapLocation(models.Model):
     def __str__(self):
         return f"{self.name} ({self.latitude}, {self.longitude})"
 
+
+
+class Activity(models.Model):
+    # Actor (who performed the action)
+    actor = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='activities')
+
+    # Verb/action short code
+    ACTION_CHOICES = [
+        ('post_story','posted_story'),
+        ('post_reel','posted_reel'),
+        ('like','liked'),
+        ('love','loved'),
+        ('celebrate','celebrated'),
+        ('unlike','unliked'),
+        ('comment','commented'),
+        ('follow','followed'),
+        ('visit','visited'),
+    ]
+    verb = models.CharField(max_length=32, choices=ACTION_CHOICES)
+
+    # Generic object acted on (Story, Reel, Comment, Follow reference etc)
+    target_content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, null=True, blank=True)
+    target_object_id = models.CharField(max_length=255, null=True, blank=True)
+    target = GenericForeignKey('target_content_type', 'target_object_id')
+
+    # Optional extra payload (JSON), e.g. {"comment_id": 12}
+    data = models.JSONField(null=True, blank=True)
+
+    # Recency
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['-created_at']),
+            models.Index(fields=['actor', 'created_at']),
+            models.Index(fields=['target_content_type', 'target_object_id']),
+        ]
+
+    def __str__(self):
+        return f"{self.actor} {self.verb} {self.target or ''} @ {self.created_at}"

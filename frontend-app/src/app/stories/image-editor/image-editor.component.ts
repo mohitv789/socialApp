@@ -17,7 +17,9 @@ export class ImageEditorComponent implements OnInit{
 
   private openSnackBarSubscription:Subscription;
 
-  constructor(private authService: AuthService,private utilService: UtilService, private snackBar: MatSnackBar,private dialogRef: MatDialogRef<ImageEditorComponent>,@Inject(MAT_DIALOG_DATA) public data: any, private rService: ReelsHTTPService, ) {
+  constructor(private authService: AuthService,private utilService: UtilService, 
+    private snackBar: MatSnackBar,private dialogRef: MatDialogRef<ImageEditorComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: any) {
     this.openSnackBarSubscription = utilService.openSnackBar$.subscribe(
       (({message,duration})=>{
         this.snackBar.open(message,undefined,{
@@ -26,6 +28,8 @@ export class ImageEditorComponent implements OnInit{
       })
     );
   }
+
+  
 
   ngOnInit() {
     this.authService.user().subscribe((result: any) => {
@@ -52,4 +56,6 @@ export class ImageEditorComponent implements OnInit{
       this.onClose();
     }
   }
+
+  
 }

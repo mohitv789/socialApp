@@ -22,7 +22,6 @@ import {MatIconModule} from '@angular/material/icon';
 import {MatFormFieldModule} from '@angular/material/form-field';
 import {MatProgressBarModule} from '@angular/material/progress-bar';
 import { StoryNewReelComponent } from './story-new/story-new-reel/story-new-reel.component';
-import { NgImageSliderModule } from 'ng-image-slider';
 import { ReelPersonalComponent } from './reel/reel-personal/reel-personal.component';
 import { StoryPushedComponent } from './story-pushed/story-pushed.component';
 import { PushedItemComponent } from './story-pushed/pushed-item/pushed-item.component';
@@ -51,11 +50,12 @@ import {MatTooltipModule} from '@angular/material/tooltip';
 import {MatSelectModule} from '@angular/material/select';
 import {MatSnackBarModule} from '@angular/material/snack-bar';
 import {MatMenuModule} from '@angular/material/menu';
-import { NgxGalleryModule } from '@kolkov/ngx-gallery';
 import { CropToolsComponent } from './image-editor/toolbar/crop-tools/crop-tools.component';
 import { TextToolsComponent } from './image-editor/toolbar/text-tools/text-tools.component';
 import { ShapeMaskToolsComponent } from './image-editor/toolbar/shape-mask-tools/shape-mask-tools.component';
 import { SharedModule } from './shared.module';
+import { DragDropModule } from '@angular/cdk/drag-drop';
+import { AiToolsComponent } from './image-editor/toolbar/ai-tools/ai-tools.component';
 
 @NgModule({
   declarations: [
@@ -96,6 +96,7 @@ import { SharedModule } from './shared.module';
     CropToolsComponent,
     TextToolsComponent,
     ShapeMaskToolsComponent,
+    AiToolsComponent
   ],
   imports: [
     CommonModule,
@@ -110,7 +111,6 @@ import { SharedModule } from './shared.module';
     MatInputModule,
     MatDialogModule,
     MatIconModule,
-    NgImageSliderModule,
     MatTabsModule,
     MatGridListModule,
     MatButtonModule,
@@ -120,7 +120,7 @@ import { SharedModule } from './shared.module';
     MatTooltipModule,
     MatSnackBarModule,
     MatMenuModule,
-    NgxGalleryModule
+    DragDropModule
   ],
   exports: [
     MatStepperModule,
@@ -138,6 +138,7 @@ import { SharedModule } from './shared.module';
     ReelListComponent,
     StoryNewPartaComponent,
     StoryNewPartbComponent,
+    AiToolsComponent
   ]
 })
 export class StoryModule { }

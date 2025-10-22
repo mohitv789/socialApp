@@ -1,72 +1,38 @@
 <div class="toolbar-wrapper">
+  <!-- === ICON PANEL === -->
   <div class="icon-panel">
-    <button
-      matTooltip="Go Back"
-      mat-icon-button
-      [hidden]="selectedToolType === 'MAIN' || selectedToolType === 'DEACTIVATE'"
-      (click)="backToMainMenu()"
-    >
+    <button matTooltip="Go Back" mat-icon-button *ngIf="selectedToolType!=='MAIN' && selectedToolType!=='DEACTIVATE'" (click)="backToMainMenu()">
       <i class="material-icons icons">arrow_back</i>
     </button>
 
-    <button
-      matTooltip="Clean Selected"
-      mat-icon-button
-      [disabled]="selection === undefined"
-      *ngIf="selectedToolType === 'MAIN' || selectedToolType === 'DEACTIVATE'"
-      (click)="cleanSelect()"
-    >
-      <i class="material-icons" [ngClass]="{ 'icons': selection !== undefined }">do_not_disturb_alt</i>
+    <button matTooltip="Clean Selected" mat-icon-button [disabled]="selection===undefined" *ngIf="selectedToolType==='MAIN' || selectedToolType==='DEACTIVATE'" (click)="cleanSelect()">
+      <i class="material-icons" [ngClass]="{'icons':selection!==undefined}">do_not_disturb_alt</i>
     </button>
 
-    <button
-      matTooltip="Bring Forward"
-      mat-icon-button
-      [disabled]="selection === undefined || selectionType === 'group'"
-      (click)="bringForward()"
-    >
-      <i class="material-icons" [ngClass]="{ 'icons': selection !== undefined && selectionType !== 'group' }">flip_to_front</i>
+    <button matTooltip="Bring Forward" mat-icon-button [disabled]="selection===undefined || selectionType==='group'" (click)="bringForward()">
+      <i class="material-icons" [ngClass]="{'icons':selection!==undefined && selectionType!=='group'}">flip_to_front</i>
     </button>
 
-    <button
-      matTooltip="Send backward"
-      mat-icon-button
-      [disabled]="selection === undefined || selectionType === 'group'"
-      (click)="sendBackward()"
-    >
-      <i class="material-icons" [ngClass]="{ 'icons': selection !== undefined && selectionType !== 'group' }">flip_to_back</i>
+    <button matTooltip="Send backward" mat-icon-button [disabled]="selection===undefined || selectionType==='group'" (click)="sendBackward()">
+      <i class="material-icons" [ngClass]="{'icons':selection!==undefined && selectionType!=='group'}">flip_to_back</i>
     </button>
   </div>
 
+  <!-- === MAIN TOOL SLIDER === -->
   <div class="main-tool-slider">
-    <!-- keep children mounted; toggle visibility with [hidden] -->
-    <app-main-tool
-      (closeSignal)="getNotification($event)"
-      [selectedToolType]="selectedToolType"
-      [hidden]="!(selectedToolType === 'MAIN' || selectedToolType === 'DEACTIVATE')"
-    ></app-main-tool>
+    <app-main-tool (closeSignal)="getNotification($event)" [selectedToolType]="selectedToolType" *ngIf="selectedToolType==='MAIN' || selectedToolType==='DEACTIVATE'"></app-main-tool>
 
-    <app-filter-tool
-      [selectedToolType]="selectedToolType"
-      [activeObjectProps]="activeObjectProps"
-      [hidden]="!(selectedToolType === 'FILTER:ALL' || selectedToolType === 'FILTER:SINGLE')"
-    ></app-filter-tool>
+    <app-filter-tool [selectedToolType]="selectedToolType" [activeObjectProps]="activeObjectProps" *ngIf="selectedToolType==='FILTER:ALL' || selectedToolType==='FILTER:SINGLE'"></app-filter-tool>
 
-    <app-crop-tools
-      [selectedToolType]="selectedToolType"
-      [hidden]="!(selectedToolType === 'CROP')"
-    ></app-crop-tools>
+    <app-crop-tools [selectedToolType]="selectedToolType" *ngIf="selectedToolType==='CROP'"></app-crop-tools>
 
-    <app-text-tools
-      [selectedToolType]="selectedToolType"
-      [activeObjectProps]="activeObjectProps"
-      [hidden]="!(selectedToolType === 'TEXT' || selectedToolType === 'TEXT:EDITING')"
-    ></app-text-tools>
+    <app-text-tools [selectedToolType]="selectedToolType" [activeObjectProps]="activeObjectProps" *ngIf="selectedToolType==='TEXT' || selectedToolType==='TEXT:EDITING'"></app-text-tools>
 
-    <app-shape-mask-tools
-      [selectedToolType]="selectedToolType"
-      [activeObjectProps]="activeObjectProps"
-      [hidden]="!(selectedToolType === 'SHAPE_MASK')"
-    ></app-shape-mask-tools>
+    <app-shape-mask-tools [selectedToolType]="selectedToolType" [activeObjectProps]="activeObjectProps" *ngIf="selectedToolType==='SHAPE_MASK'"></app-shape-mask-tools>
+
+    <app-ai-tools></app-ai-tools>
   </div>
+
+  <!-- === FIXED AI TOOLS PANEL (anchored bottom-right of toolbar) === -->
+  
 </div>

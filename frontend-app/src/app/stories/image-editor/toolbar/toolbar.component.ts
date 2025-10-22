@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { Subscription } from 'rxjs';
 import { UtilService } from '../util.service';
 
@@ -33,6 +33,36 @@ export class ToolbarComponent implements OnInit{
   onChangeToolTypeSubscription:Subscription;
   onSelectionCreatedSubscription:Subscription;
   @Output() closeSignal: EventEmitter<any> = new EventEmitter();
+
+
+
+  /** emits when an AI action is requested from the toolbar */
+  @Output() aiRequest = new EventEmitter<{ action: string, prompt?: string }>();
+
+  /** emits when undo is requested */
+  @Output() undoRequested = new EventEmitter<void>();
+
+  /**
+   * Called by template buttons: emits an aiRequest event for parent to handle.
+   * action: string => one of 'remove_bg'|'enhance'|'restore'|'llm_parse' etc.
+   * prompt: optional prompt for LLM-based actions
+   */
+  applyAIFilter(action: string, prompt?: string): void {
+    // defensive: normalize params
+    const payload: { action: string, prompt?: string } = { action };
+    if (prompt && prompt.trim().length) payload.prompt = prompt.trim();
+    this.aiRequest.emit(payload);
+  }
+
+  /**
+   * Called by the "Undo AI" button in the template.
+   * Emits undoRequested which parent should handle (e.g. call undoAIEdit())
+   */
+  undoAIEdit(): void {
+    this.undoRequested.emit();
+  }
+
+
   onChangeToolType(toolType:string):void {
     this.selectedToolType = toolType;
   }

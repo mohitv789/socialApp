@@ -1,0 +1,23 @@
+<div class="ai-content" *ngIf="!aiCollapsed">
+    <div class="ai-buttons">
+      <button mat-stroked-button (click)="applyAIFilter('remove_bg')">Remove BG</button>
+      <button mat-stroked-button (click)="applyAIFilter('enhance')">Enhance</button>
+      <button mat-stroked-button (click)="applyAIFilter('restore')">Restore</button>
+    </div>
+
+    <div class="ai-prompt">
+      <mat-form-field appearance="outline" style="width:100%">
+        <input matInput placeholder="Describe edit (e.g. 'sunset background, enhance face')" #aiPrompt />
+      </mat-form-field>
+      <button mat-flat-button color="primary" (click)="applyAIFilter('llm_parse', aiPrompt.value)">AI Magic</button>
+    </div>
+
+    <button mat-button (click)="undoAIEdit()" [disabled]="!undoStack || !undoStack.length">Undo AI</button>
+  </div>
+
+  <!-- Collapsed chip -->
+  <div class="ai-collapsed-chip" *ngIf="aiCollapsed" (click)="toggleAIPanel($event)" role="button" tabindex="0">
+    <span class="drag-icon">☰</span>
+    <span class="collapsed-label">AI Tools</span>
+    <mat-icon class="chev">keyboard_arrow_up</mat-icon>
+  </div>

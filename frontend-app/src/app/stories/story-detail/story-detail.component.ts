@@ -57,6 +57,7 @@ export class StoryDetailComponent implements OnInit{
     )
 
     this.loadData();
+    console.log(this.reels)
 
   }
   onEditStory() {
@@ -65,20 +66,31 @@ export class StoryDetailComponent implements OnInit{
 
   showReels() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = false;
-    dialogConfig.minWidth = "800px";
-    dialogConfig.panelClass = 'custom-modalbox';
+    dialogConfig.autoFocus = true;
     dialogConfig.disableClose = true;
-    dialogConfig.data = this.reels;
+    
+    dialogConfig.panelClass = ['custom-modalbox', 'center-dialog']
+    dialogConfig.hasBackdrop = true;
+    dialogConfig.backdropClass = 'custom-backdrop';
+    dialogConfig.width = '90vw';
+    dialogConfig.maxWidth = '1100px';
+    dialogConfig.maxHeight = '90vh';
+    console.log(this.reels);
+    dialogConfig.data = {
+      images: this.reels,       // array of ReelImage
+      startIndex: 0,
+      fromComponent: 'StoryItemComponent'
+    }
 
     this.dialog.open(ReelDialogComponent, dialogConfig);
   }
 
   addComment() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = false;
+    dialogConfig.autoFocus = true;
     dialogConfig.minWidth = "800px";
     dialogConfig.disableClose = true;
+
     this.friends$.subscribe((friendList: any) => {
       friendList.forEach((friendItem: any) => {
         if (friendItem.id == this.loggedInUserId) {
@@ -127,10 +139,9 @@ export class StoryDetailComponent implements OnInit{
   }
   showReactionInfo() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = false;
+    dialogConfig.autoFocus = true;
     dialogConfig.minWidth = "800px";
-    dialogConfig.minHeight = "600px";
-    dialogConfig.panelClass = 'custom-dialogbox';
+    dialogConfig.disableClose = false;
     let likeObj: any = {}
     this.likes.forEach((like_user: number) => {
       let fullName;

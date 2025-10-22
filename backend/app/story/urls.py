@@ -34,4 +34,5 @@ urlpatterns = [
     path('fs_notifications',views.FriendStoryActivity.as_view(),name="fs_notifications"),
     path('fr_notifications',views.FriendReelActivity.as_view(),name="fr_notifications"),
     path('photos',views.ImageModelFeed.as_view(),name="photos"),    
+    path("combined-feed/", views.CombinedFeedView.as_view(), name="combined-feed"),
 ]

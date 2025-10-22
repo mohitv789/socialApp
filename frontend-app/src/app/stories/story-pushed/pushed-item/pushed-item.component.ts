@@ -56,9 +56,21 @@ export class PushedItemComponent {
 
   goToFeedReelList() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = false;
-    dialogConfig.data = this.reels;
-    dialogConfig.backdropClass = 'backdropBackground';
+    dialogConfig.autoFocus = true;
+    dialogConfig.disableClose = true;
+    
+    dialogConfig.panelClass = ['custom-modalbox', 'center-dialog']
+    dialogConfig.hasBackdrop = true;
+    dialogConfig.backdropClass = 'custom-backdrop'; // ensure CSS targets overlay
+    dialogConfig.width = '90vw';
+    dialogConfig.height = '90vh';                       // set explicit height
+    dialogConfig.maxWidth = '1100px';
+    dialogConfig.maxHeight = '90vh';
+    dialogConfig.data = {
+      images: this.reels,       // array of ReelImage
+      startIndex: 0,
+      fromComponent: 'PushedItemComponent'
+    }
     this.dialog.open(ReelDialogComponent, dialogConfig);
   }
 

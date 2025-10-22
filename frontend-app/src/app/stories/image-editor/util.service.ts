@@ -16,6 +16,7 @@ export class UtilService {
     private http: HttpClient
   ) {
   }
+  
 
   private addImageToCanvasSource = new Subject<any>();
   addImageToCanvas$ = this.addImageToCanvasSource.asObservable();

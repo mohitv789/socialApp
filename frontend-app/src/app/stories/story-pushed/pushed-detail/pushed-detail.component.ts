@@ -71,7 +71,8 @@ export class PushedDetailComponent implements OnInit{
 
   addComment() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = false;
+    
+    dialogConfig.autoFocus = true;
     dialogConfig.minWidth = "800px";
     dialogConfig.disableClose = true;
 
@@ -117,10 +118,11 @@ export class PushedDetailComponent implements OnInit{
 
   showReactionInfo() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = false;
+  
+    dialogConfig.autoFocus = true;
     dialogConfig.minWidth = "800px";
-    dialogConfig.minHeight = "600px";
-    dialogConfig.panelClass = 'custom-dialogbox';
+    dialogConfig.disableClose = false;
+
     let likeObj: any = {}
     this.likes.forEach((like_user: number) => {
       let fullName;
@@ -375,10 +377,14 @@ export class PushedDetailComponent implements OnInit{
   }
   createStoryChatRoom() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = false;
+    
+    dialogConfig.autoFocus = true;
     dialogConfig.minWidth = "800px";
-    dialogConfig.minHeight = "600px";
-    dialogConfig.panelClass = 'custom-dialogbox';
+    dialogConfig.disableClose = true;
+
+    dialogConfig.panelClass = ['custom-modalbox', 'center-dialog']
+    dialogConfig.hasBackdrop = true;
+    dialogConfig.backdropClass = 'custom-backdrop';
     let storyObj: any = {}
     storyObj = {...this.story}
     dialogConfig.data = {
@@ -424,10 +430,10 @@ export class PushedDetailComponent implements OnInit{
         this.showLeaveChatroom = true;
         this.canshowJoinChatroom = false;
         const dialogConfig = new MatDialogConfig();
-        dialogConfig.autoFocus = false;
+        
+        dialogConfig.autoFocus = true;
         dialogConfig.minWidth = "800px";
-        dialogConfig.minHeight = "600px";
-        dialogConfig.panelClass = 'custom-dialogbox';
+        dialogConfig.disableClose = true;
         let storyObj: any = {}
         storyObj = {...this.story}
         dialogConfig.data = {

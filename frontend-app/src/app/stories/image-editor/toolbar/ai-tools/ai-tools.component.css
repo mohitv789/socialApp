@@ -1,0 +1,157 @@
+.ai-tools {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ai-gap);
+  z-index: 50;
+  padding: 12px;
+  background: red;
+  border-radius: var(--ai-radius);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.02);
+  color: var(--ai-text);
+  min-width: 200px;
+  font-family: "Roboto", "Helvetica", Arial, sans-serif;
+  user-select: none;
+}
+
+/* Logical groups inside toolbar */
+.ai-tool-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Buttons - primary / secondary variants */
+.ai-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--ai-text);
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 180ms ease;
+  font-size: 13px;
+  height: 40px;
+  white-space: nowrap;
+}
+
+.ai-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.35);
+}
+
+/* Stroked / secondary */
+.ai-btn.stroked {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  border-color: rgba(255,255,255,0.06);
+}
+
+/* Accent / primary */
+.ai-btn.primary {
+  background: linear-gradient(180deg, var(--ai-accent), #00a6b8);
+  color: #061014;
+  border: 1px solid rgba(0,0,0,0.12);
+  box-shadow: 0 6px 18px rgba(0,188,212,0.12);
+}
+.ai-btn.primary:active { transform: translateY(0); }
+
+/* Danger (undo / remove) */
+.ai-btn.danger {
+  background: rgba(255,107,107,0.12);
+  color: var(--ai-danger);
+  border: 1px solid rgba(255,107,107,0.16);
+}
+
+/* Small icon inside button */
+.ai-btn .icon {
+  display: inline-flex;
+  width: 18px;
+  height: 18px;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  opacity: 0.95;
+}
+
+/* Prompt input */
+.ai-prompt {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.ai-prompt input[type="text"] {
+  flex: 1;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  color: var(--ai-text);
+  border-radius: 10px;
+  outline: none;
+  font-size: 13px;
+}
+.ai-prompt input[type="text"]::placeholder { color: var(--ai-muted); }
+.ai-prompt button { height: 40px; }
+
+/* tiny helper row for chips */
+.ai-chips {
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.ai-chip {
+  background: var(--ai-surface);
+  padding:6px 8px;
+  border-radius: 999px;
+  color: var(--ai-text);
+  border: 1px solid rgba(255,255,255,0.03);
+  font-size: 12px;
+}
+
+/* Progress overlay (absolute inside canvas area) */
+.ai-progress-overlay {
+  position: absolute;
+  inset: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap:8px;
+  pointer-events: none; /* allow clicking through unless you want to block */
+  z-index: 60;
+}
+.ai-progress-card {
+  background: linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.5));
+  padding: 12px 18px;
+  border-radius: 12px;
+  color: var(--ai-text);
+  display:flex;
+  align-items:center;
+  gap:12px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+  pointer-events: auto; /* card itself can receive hover if needed */
+}
+.ai-progress-bar {
+  height: 8px;
+  width: 220px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 999px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.02);
+}
+.ai-progress-bar > i {
+  display:block;
+  height:100%;
+  background: linear-gradient(90deg, var(--ai-accent), #00a6b8);
+  width: 0%;
+  transition: width 300ms ease;
+}
+
+/* small responsive tweaks */
+@media (max-width: 900px) {
+  .ai-tools { min-width: unset; width: 100%; padding: 10px; border-radius: 8px; }
+  .ai-progress-bar { width: 160px; }
+}

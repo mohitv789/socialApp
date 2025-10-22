@@ -107,10 +107,9 @@ export class ReelDetailComponent implements OnInit{
   }
   showReactionInfo() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = false;
+    dialogConfig.autoFocus = true;
     dialogConfig.minWidth = "800px";
-    dialogConfig.minHeight = "600px";
-    dialogConfig.panelClass = 'custom-dialogbox';
+    dialogConfig.disableClose = false;
     let likeObj: any = {}
     this.likes.forEach((like_user: number) => {
       let fullName;
@@ -152,7 +151,7 @@ export class ReelDetailComponent implements OnInit{
   }
   editReel() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = false;
+    dialogConfig.autoFocus = true;
     dialogConfig.minWidth = "1500px";
     dialogConfig.disableClose = true;
     if (!this.reelData["image"].split(":")[0]) {

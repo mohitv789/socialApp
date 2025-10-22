@@ -1,0 +1,7 @@
+FROM python:3.12-slim
+WORKDIR /app
+COPY ./backend/pyproject.toml ./backend/requirements-websocket.txt /tmp/
+RUN python -m pip install --upgrade pip setuptools wheel \
+ && pip install --prefer-binary -r /tmp/requirements-websocket.txt
+COPY ./backend /app
+CMD ["daphne", "-b", "0.0.0.0", "-p", "8080", "app.asgi:application"]

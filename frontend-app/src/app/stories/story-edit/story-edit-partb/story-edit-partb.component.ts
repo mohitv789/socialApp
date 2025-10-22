@@ -51,13 +51,12 @@ import { UtilService } from '../../image-editor/util.service';
     addReel() {
 
       const dialogConfig = new MatDialogConfig();
-      dialogConfig.autoFocus = false;
-      dialogConfig.minWidth = "800px";
+      dialogConfig.autoFocus = true;
+      dialogConfig.minWidth = "1500px";
       dialogConfig.disableClose = true;
-
       this.dialog.open(StoryNewReelComponent, dialogConfig)
         .afterClosed()
-        .subscribe(val => {
+        .subscribe((val : any) => {
           if (val) {
             console.log(val);
             const newReelGroup = this.fb.group({
@@ -85,8 +84,9 @@ import { UtilService } from '../../image-editor/util.service';
     onEdit(sectionIndex: number) {
       console.log(this.reels.value[sectionIndex]);
       const dialogConfig = new MatDialogConfig();
-      dialogConfig.autoFocus = false;
-      dialogConfig.minWidth = "1200px";
+      
+      dialogConfig.autoFocus = true;
+      dialogConfig.minWidth = "1500px";
       dialogConfig.disableClose = true;
       if (!this.reels.value[sectionIndex]["image"].split(":")[0]) {
         this.reels.value[sectionIndex]["image"] = "http://localhost:4500/" + this.reels.value[sectionIndex]["image"];

@@ -30,7 +30,8 @@ get reels() {
 addReel() {
 
   const dialogConfig = new MatDialogConfig();
-  dialogConfig.autoFocus = false;
+  
+  dialogConfig.autoFocus = true;
   dialogConfig.minWidth = "800px";
   dialogConfig.disableClose = true;
 
@@ -59,9 +60,10 @@ addReel() {
   onEdit(sectionIndex: number) {
     console.log(this.reels.value[sectionIndex]);
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = false;
-    dialogConfig.minWidth = "1200px";
-    dialogConfig.disableClose = true;
+    
+    dialogConfig.autoFocus = true;
+    dialogConfig.minWidth = "800px";
+    dialogConfig.disableClose = true; 
     if (!this.reels.value[sectionIndex]["image"].split(":")[0]) {
       this.reels.value[sectionIndex]["image"] = "http://localhost:4500/" + this.reels.value[sectionIndex]["image"];
     }

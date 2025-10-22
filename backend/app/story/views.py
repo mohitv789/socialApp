@@ -4,7 +4,11 @@ import json
 import logging
 import base64
 import io
-
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from django.utils.dateparse import parse_datetime
+from django.utils.timezone import make_aware
 from django.db import transaction
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.core.files.base import ContentFile
@@ -15,7 +19,24 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser
+from django.contrib.contenttypes.models import ContentType
+from django.db.models import Q
+from django.core.paginator import Paginator
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from django.contrib.contenttypes.models import ContentType
+from django.core.paginator import Paginator
+from django.shortcuts import get_object_or_404
+from django.db.models import Prefetch
 
+from user.authentication import JWTCookieAuthentication
+from core.models import (
+    Activity, StoryFeed, ReelFeed, Story, Reel,
+    FriendStoryActivityFeed, FriendReelActivityFeed,
+    StoryComment, ReelComment
+)
+from core.models import Activity, Follow, Block  
 from PIL import Image
 
 from core.models import (
@@ -35,7 +56,15 @@ from .permissions import IsOwnerOrReadOnly, IsReelOwnerOrReadOnly, IsCommentOwne
 from user.authentication import JWTCookieAuthentication
 
 logger = logging.getLogger(__name__)
+def _get_following_ids(user):
+    """Return list of user ids the given user follows."""
+    return list(Follow.objects.filter(follower=user).values_list('followee', flat=True))
 
+def _get_blocked_ids(user):
+    """Return set of user ids that are blocked by user or that block the user."""
+    blocked = set(Block.objects.filter(blocker=user).values_list('blocked', flat=True))
+    blocking_me = set(Block.objects.filter(blocked=user).values_list('blocker', flat=True))
+    return blocked.union(blocking_me)
 
 def is_base64_image(input_data: str) -> bool:
     """
@@ -100,10 +129,30 @@ class ReelViewSet(viewsets.ModelViewSet):
         return ReelSerializer
 
     # keep a normal DRF create that accepts JSON (default JSONParser included)
+    # def perform_create(self, serializer):
+    #     reel_instance = serializer.save()
+    #     logger.info(f"Reel created (id={reel_instance.id}) by {self.request.user.username}")
+    #     return reel_instance
+    
     def perform_create(self, serializer):
         reel_instance = serializer.save()
         logger.info(f"Reel created (id={reel_instance.id}) by {self.request.user.username}")
+
+        # create Activity for posting a reel
+        try:
+            ct = ContentType.objects.get_for_model(reel_instance.__class__)
+            Activity.objects.get_or_create(
+                actor=self.request.user,
+                verb='post_reel',
+                target_content_type=ct,
+                target_object_id=str(reel_instance.id),
+                defaults={'data': {'target_type': 'reel'}}
+            )
+        except Exception:
+            logger.exception("Failed creating Activity for reel post")
+
         return reel_instance
+
 
     def create(self, request, *args, **kwargs):
 
@@ -287,7 +336,19 @@ class StoryViewSet(viewsets.ModelViewSet):
             s_friendfeed = FriendStoryActivityFeed.objects.create(ownerUser=self.request.user, action="spub", story_id=story_id)
             for friend in friend_list:
                 s_friendfeed.forUser.add(friend)
+
             s_friendfeed.save()
+            try:
+                ct = ContentType.objects.get_for_model(serializer.instance.__class__)
+                Activity.objects.get_or_create(
+                    actor=self.request.user,
+                    verb='post_story',
+                    target_content_type=ct,
+                    target_object_id=str(serializer.instance.id),
+                    defaults={'data': {'target_type': 'story'}}
+                )
+            except Exception:
+                logger.exception("Failed creating Activity for story post")
         except Exception:
             logger.exception("Failed to create FriendStoryActivityFeed on story create")
         return Response({'id': story_id}, status=status.HTTP_201_CREATED)
@@ -312,6 +373,27 @@ class StoryViewSet(viewsets.ModelViewSet):
             for friend in friend_list:
                 s_friendfeed.forUser.add(friend)
             s_friendfeed.save()
+                    # create/update Activity for story edit (we keep singular 'post_story' for owner)
+            try:
+                ct = ContentType.objects.get_for_model(instance.__class__)
+                # update timestamp by deleting and recreating to reflect latest updated_at,
+                # or you can set another verb like 'edit_story' if you prefer history.
+                Activity.objects.filter(
+                    actor=self.request.user,
+                    verb='post_story',
+                    target_content_type=ct,
+                    target_object_id=str(instance.id),
+                ).delete()
+                Activity.objects.create(
+                    actor=self.request.user,
+                    verb='post_story',
+                    target_content_type=ct,
+                    target_object_id=str(instance.id),
+                    data={'target_type': 'story'}
+                )
+            except Exception:
+                logger.exception("Failed updating Activity for story edit")
+
         except Exception:
             logger.exception("Failed to create/update FriendStoryActivityFeed on story update")
 
@@ -382,6 +464,19 @@ class StoryCommentViewSet(viewsets.ModelViewSet):
             s_friendfeed.save()
         except Exception:
             logger.exception("Failed to create comment/activity feed for story comment")
+                # Activity for new comment
+        try:
+            ct = ContentType.objects.get_for_model(story.__class__)
+            Activity.objects.create(
+                actor=commented_by_user,
+                verb='comment',
+                target_content_type=ct,
+                target_object_id=str(story_id),
+                data={'comment_id': comment.id, 'preview': (comment.storycomment[:120] if hasattr(comment, 'storycomment') else '')}
+            )
+        except Exception:
+            logger.exception("Failed creating Activity for story comment")
+
         return Response({'id': comment.id}, status=status.HTTP_201_CREATED)
 
     @transaction.atomic
@@ -399,6 +494,25 @@ class StoryCommentViewSet(viewsets.ModelViewSet):
             if comFeedObj:
                 comFeedObj.action = "ecom"
                 comFeedObj.save()
+                        # Update Activity for comment edit: update data.comment_id or recreate
+                try:
+                    ct = ContentType.objects.get_for_model(story.__class__)
+                    # remove previous comment activity and re-create to update timestamp
+                    Activity.objects.filter(
+                        actor=request.user, verb='comment',
+                        target_content_type=ct, target_object_id=str(story_id),
+                        data__comment_id=comment_id
+                    ).delete()
+                    Activity.objects.create(
+                        actor=request.user,
+                        verb='comment',
+                        target_content_type=ct,
+                        target_object_id=str(story_id),
+                        data={'comment_id': comment_id, 'preview': (request.data.get('storycomment') or '')[:120]}
+                    )
+                except Exception:
+                    logger.exception("Failed updating Activity for story comment edit")
+
         except Exception:
             logger.exception("Failed updating StoryCommentActivityFeed")
         friend_list = Friend.objects.friends(self.request.user)
@@ -530,9 +644,92 @@ class ReelReactionBaseAPIView(APIView):
 
 # For brevity I keep the explicit endpoints but cleaned up exceptions and DRYed some code.
 class StoryLikeAPIView(StoryReactionBaseAPIView):
+    # def delete(self, request, storyId):
+    #     story, user = self._get_story_and_user(storyId, request)
+    #     story.likes.remove(user)
+    #     try:
+    #         ct = ContentType.objects.get_for_model(story.__class__)
+    #         Activity.objects.filter(
+    #             actor=user, verb='like',
+    #             target_content_type=ct, target_object_id=str(story.id)
+    #         ).delete()
+    #     except Exception:
+    #         logger.exception("Failed deleting Activity for story unlike")
+
+    #     story.save()
+
+    #     _remove_from_feed_m2m(StoryFeed, user, 'feedLikedStory', story)
+    #     try:
+    #         activity = StoryReactionActivityFeed.objects.filter(doneByUser=user, story=story, currentUser=story.owner, action="lik").first()
+    #         if activity:
+    #             activity.action = "ulk"
+    #             activity.save()
+    #     except Exception:
+    #         logger.exception("Failed updating StoryReactionActivityFeed on unlike")
+
+    #     try:
+    #         s_friendfeed = FriendStoryActivityFeed.objects.filter(ownerUser=request.user, story_id=storyId).first()
+    #         if s_friendfeed:
+    #             s_friendfeed.action = "sulk"
+    #             for friend in Friend.objects.friends(request.user):
+    #                 s_friendfeed.forUser.add(friend)
+    #             s_friendfeed.save()
+    #     except Exception:
+    #         logger.exception("Failed updating FriendStoryActivityFeed on unlike")
+
+    #     return Response(self.serializer_class(story, context={"request": request}).data, status=status.HTTP_200_OK)
+
+    # def post(self, request, storyId):
+    #     story, user = self._get_story_and_user(storyId, request)
+    #     story.likes.add(user)
+    #     # create Activity row (single canonical history)
+    #     try:
+    #         ct = ContentType.objects.get_for_model(story.__class__)
+    #         Activity.objects.create(
+    #             actor=user,
+    #             verb='like',
+    #             target_content_type=ct,
+    #             target_object_id=str(story.id),
+    #             data={'target_type': 'story'}
+    #         )
+    #     except Exception:
+    #         logger.exception("Failed creating Activity for story like")
+
+    #     story.save()
+
+    #     _add_to_feed_m2m_or_create(StoryFeed, user, 'feedLikedStory', story)
+
+    #     try:
+    #         activity, created = StoryReactionActivityFeed.objects.get_or_create(currentUser=story.owner, doneByUser=user, story=story, action="lik")
+    #         if created:
+    #             activity.save()
+    #     except Exception:
+    #         logger.exception("Failed creating StoryReactionActivityFeed on like")
+
+    #     try:
+    #         s_friendfeed, created = FriendStoryActivityFeed.objects.get_or_create(ownerUser=request.user, story_id=storyId, action="slik")
+    #         for friend in Friend.objects.friends(request.user):
+    #             s_friendfeed.forUser.add(friend)
+    #         s_friendfeed.save()
+    #     except Exception:
+    #         logger.exception("Failed creating FriendStoryActivityFeed on like")
+
+    #     return Response(self.serializer_class(story, context={"request": request}).data, status=status.HTTP_200_OK)
+
     def delete(self, request, storyId):
         story, user = self._get_story_and_user(storyId, request)
         story.likes.remove(user)
+
+        # remove canonical Activity for like
+        try:
+            ct = ContentType.objects.get_for_model(story.__class__)
+            Activity.objects.filter(
+                actor=user, verb='like',
+                target_content_type=ct, target_object_id=str(story.id)
+            ).delete()
+        except Exception:
+            logger.exception("Failed deleting Activity for story unlike")
+
         story.save()
 
         _remove_from_feed_m2m(StoryFeed, user, 'feedLikedStory', story)
@@ -559,6 +756,20 @@ class StoryLikeAPIView(StoryReactionBaseAPIView):
     def post(self, request, storyId):
         story, user = self._get_story_and_user(storyId, request)
         story.likes.add(user)
+
+        # create Activity row (single canonical history)
+        try:
+            ct = ContentType.objects.get_for_model(story.__class__)
+            Activity.objects.get_or_create(
+                actor=user,
+                verb='like',
+                target_content_type=ct,
+                target_object_id=str(story.id),
+                defaults={'data': {'target_type': 'story'}}
+            )
+        except Exception:
+            logger.exception("Failed creating Activity for story like")
+
         story.save()
 
         _add_to_feed_m2m_or_create(StoryFeed, user, 'feedLikedStory', story)
@@ -582,10 +793,74 @@ class StoryLikeAPIView(StoryReactionBaseAPIView):
 
 
 class ReelLikeAPIView(ReelReactionBaseAPIView):
+    # def delete(self, request, reelId):
+    #     reel = get_object_or_404(Reel, id=reelId)
+    #     user = request.user
+    #     reel.likes.remove(user)
+    #     reel.save()
+
+    #     _remove_from_feed_m2m(ReelFeed, user, 'feedLikedReel', reel)
+
+    #     try:
+    #         activity = ReelReactionActivityFeed.objects.filter(doneByUser=user, reel=reel, currentUser=reel.reel_owner, action="lik").first()
+    #         if activity:
+    #             activity.action = "ulk"
+    #             activity.save()
+    #     except Exception:
+    #         logger.exception("Failed updating ReelReactionActivityFeed on unlike")
+
+    #     try:
+    #         r_friendfeed = FriendReelActivityFeed.objects.filter(ownerUser=request.user, reel_id=reelId).first()
+    #         if r_friendfeed:
+    #             r_friendfeed.action = "rulk"
+    #             for friend in Friend.objects.friends(request.user):
+    #                 r_friendfeed.forUser.add(friend)
+    #             r_friendfeed.save()
+    #     except Exception:
+    #         logger.exception("Failed updating FriendReelActivityFeed on unlike")
+
+    #     return Response(self.serializer_class(reel, context={"request": request}).data, status=status.HTTP_200_OK)
+
+    # def post(self, request, reelId):
+    #     reel = get_object_or_404(Reel, id=reelId)
+    #     user = request.user
+    #     reel.likes.add(user)
+    #     reel.save()
+
+    #     _add_to_feed_m2m_or_create(ReelFeed, user, 'feedLikedReel', reel)
+
+    #     try:
+    #         activity, created = ReelReactionActivityFeed.objects.get_or_create(currentUser=reel.reel_owner, doneByUser=user, reel=reel, action="lik")
+    #         if created:
+    #             activity.save()
+    #     except Exception:
+    #         logger.exception("Failed creating ReelReactionActivityFeed on like")
+
+    #     try:
+    #         r_friendfeed, created = FriendReelActivityFeed.objects.get_or_create(ownerUser=request.user, reel_id=reelId, action="rlik")
+    #         for friend in Friend.objects.friends(request.user):
+    #             r_friendfeed.forUser.add(friend)
+    #         r_friendfeed.save()
+    #     except Exception:
+    #         logger.exception("Failed creating FriendReelActivityFeed on like")
+
+    #     return Response(self.serializer_class(reel, context={"request": request}).data, status=status.HTTP_200_OK)
+
     def delete(self, request, reelId):
         reel = get_object_or_404(Reel, id=reelId)
         user = request.user
         reel.likes.remove(user)
+
+        # delete Activity like for reel
+        try:
+            ct = ContentType.objects.get_for_model(reel.__class__)
+            Activity.objects.filter(
+                actor=user, verb='like',
+                target_content_type=ct, target_object_id=str(reel.id)
+            ).delete()
+        except Exception:
+            logger.exception("Failed deleting Activity for reel unlike")
+
         reel.save()
 
         _remove_from_feed_m2m(ReelFeed, user, 'feedLikedReel', reel)
@@ -614,6 +889,20 @@ class ReelLikeAPIView(ReelReactionBaseAPIView):
         reel = get_object_or_404(Reel, id=reelId)
         user = request.user
         reel.likes.add(user)
+
+        # create Activity for reel like
+        try:
+            ct = ContentType.objects.get_for_model(reel.__class__)
+            Activity.objects.get_or_create(
+                actor=user,
+                verb='like',
+                target_content_type=ct,
+                target_object_id=str(reel.id),
+                defaults={'data': {'target_type': 'reel'}}
+            )
+        except Exception:
+            logger.exception("Failed creating Activity for reel like")
+
         reel.save()
 
         _add_to_feed_m2m_or_create(ReelFeed, user, 'feedLikedReel', reel)
@@ -666,6 +955,29 @@ class StoryCelebrateAPIView(StoryReactionBaseAPIView):
     def post(self, request, storyId):
         story, user = self._get_story_and_user(storyId, request)
         story.celebrates.add(user)
+            # in StoryCelebrateAPIView.post (after story.celebrates.add(user))
+        try:
+            ct = ContentType.objects.get_for_model(story.__class__)
+            Activity.objects.get_or_create(
+                actor=user,
+                verb='celebrate',
+                target_content_type=ct,
+                target_object_id=str(story.id),
+                defaults={'data': {'target_type': 'story'}}
+            )
+        except Exception:
+            logger.exception("Failed creating Activity for story celebrate")
+
+        # in StoryCelebrateAPIView.delete (after story.celebrates.remove(user))
+        try:
+            ct = ContentType.objects.get_for_model(story.__class__)
+            Activity.objects.filter(
+                actor=user, verb='celebrate',
+                target_content_type=ct, target_object_id=str(story.id)
+            ).delete()
+        except Exception:
+            logger.exception("Failed deleting Activity for story uncelebrate")
+
         story.save()
         _add_to_feed_m2m_or_create(StoryFeed, user, 'feedCelebratedStory', story)
         try:
@@ -1179,3 +1491,245 @@ class ImageModelFeed(APIView):
                 except Exception:
                     logger.exception("Error building reel photo entry for ImageModel %s", item.get("id"))
         return Response({"storyphotos": story_photos, "reelphotos": reel_photos}, status=status.HTTP_200_OK)
+
+
+
+class FeedView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def _serialize_activity(self, activity, request):
+        """
+        Minimal serializer for Activity rows. We avoid heavy fetching here; instead
+        return actor info and target identity. If you want full target objects,
+        implement batched prefetch after grouping by content_type.
+        """
+        actor = activity.actor
+        actor_data = {"id": actor.pk, "name": f"{actor.first_name} {actor.last_name}"}
+
+        # Basic target representation (type + id). You can expand this later.
+        target_type = activity.target_content_type.model if activity.target_content_type else None
+        target_id = activity.target_object_id
+
+        return {
+            "id": activity.pk,
+            "actor": actor_data,
+            "verb": activity.verb,
+            "target_type": target_type,
+            "target_id": target_id,
+            "data": activity.data or {},
+            "created_at": activity.created_at.isoformat(),
+        }
+
+    def get(self, request):
+        user = request.user
+
+        # query params
+        page = int(request.query_params.get("page", 1))
+        per_page = int(request.query_params.get("per_page", 20))
+        created_before = request.query_params.get("created_before")  # ISO datetime string for cursoring
+
+        following_ids = _get_following_ids(user)
+        exclude_user_ids = _get_blocked_ids(user)
+
+        # Base queryset:
+        # - Activities by users the current user follows
+        # - OR system/global post events (you can add verbs that should be visible even if not followed)
+        base_q = Q(actor__in=following_ids) | Q(verb__in=['post_story', 'post_reel'])
+        qs = Activity.objects.filter(base_q).exclude(actor__in=exclude_user_ids).select_related('actor', 'target_content_type')
+
+        # cursor: created_before filters for infinite scroll
+        if created_before:
+            dt = parse_datetime(created_before)
+            if dt is not None:
+                # make timezone aware if naive (DRF client should send ISO with timezone; otherwise adapt)
+                try:
+                    if dt.tzinfo is None:
+                        dt = make_aware(dt)
+                except Exception:
+                    pass
+                qs = qs.filter(created_at__lt=dt)
+
+        qs = qs.order_by('-created_at')
+
+        # simple pagination
+        p = Paginator(qs, per_page)
+        page_obj = p.get_page(page)
+
+        activities = [self._serialize_activity(a, request) for a in page_obj.object_list]
+
+        return Response({
+            "results": activities,
+            "page": page,
+            "has_next": page_obj.has_next(),
+        })
+
+def _serialize_story(story, request=None):
+    return {
+        "id": str(story.id),
+        "title": getattr(story, "title", ""),
+        "description": getattr(story, "description", "")[:200],
+        "image": request.build_absolute_uri(story.image.url) if getattr(story, "image", None) and request else None,
+        "owner_id": story.owner_id,
+        "likes": story.likes.count(),
+        "loves": story.loves.count(),
+        "celebrates": story.celebrates.count(),
+        "num_comments": story.comments.count(),
+        "updated_at": story.updated_at.isoformat() if getattr(story, "updated_at", None) else None,
+    }
+
+def _serialize_reel(reel, request=None):
+    return {
+        "id": str(reel.id),
+        "caption": getattr(reel, "caption", ""),
+        "image": request.build_absolute_uri(reel.image.url) if getattr(reel, "image", None) and request else None,
+        "owner_id": reel.reel_owner_id,
+        "likes": reel.likes.count(),
+        "loves": reel.loves.count(),
+        "celebrates": reel.celebrates.count(),
+        "num_comments": ReelComment.objects.filter(reel=reel).count(),
+        "updated_at": reel.updated_at.isoformat() if getattr(reel, "updated_at", None) else None,
+    }
+
+def _serialize_activity(act, request=None):
+    actor = act.actor
+    actor_data = {"id": actor.pk, "name": f"{actor.first_name} {actor.last_name}"}
+    target_type = act.target_content_type.model if act.target_content_type else None
+    target_id = act.target_object_id
+    # try to add basic target payload
+    target = None
+    try:
+        if target_type == "story":
+            story = Story.objects.filter(id=target_id).first()
+            if story:
+                target = _serialize_story(story, request=request)
+        elif target_type == "reel":
+            reel = Reel.objects.filter(id=target_id).first()
+            if reel:
+                target = _serialize_reel(reel, request=request)
+    except Exception:
+        target = None
+
+    return {
+        "id": act.pk,
+        "actor": actor_data,
+        "verb": act.verb,
+        "target_type": target_type,
+        "target_id": target_id,
+        "target": target,
+        "data": act.data or {},
+        "created_at": act.created_at.isoformat() if getattr(act, "created_at", None) else None,
+    }
+
+
+class CombinedFeedView(APIView):
+    """
+    Returns a combined feed JSON containing:
+      - activities (paged)
+      - story feed entries (stories for the user's StoryFeed)
+      - reel feed entries (reels for the user's ReelFeed)
+      - friend activities (recent FriendStoryActivityFeed & FriendReelActivityFeed)
+    Query params:
+      - page (int) default 1 -> controls the Activity pagination page
+      - per_page (int) default 20 -> page size for activities
+      - include_stories (bool) default true
+      - include_reels (bool) default true
+      - include_friend_activities (bool) default true
+    """
+    permission_classes = [IsAuthenticated]
+    authentication_classes = (JWTCookieAuthentication,)
+
+    def get(self, request):
+        user = request.user
+
+        page = int(request.query_params.get("page", 1))
+        per_page = int(request.query_params.get("per_page", 20))
+        include_stories = request.query_params.get("include_stories", "true").lower() != "false"
+        include_reels = request.query_params.get("include_reels", "true").lower() != "false"
+        include_friend_activities = request.query_params.get("include_friend_activities", "true").lower() != "false"
+
+        # Activities: by users the current user follows OR global post events; exclude blocks already handled upstream if needed
+        following_ids = list(user.following.values_list("followee", flat=True)) if hasattr(user, "following") else []
+        base_q = (Q(actor__in=following_ids) if following_ids else Q()) | Q(verb__in=['post_story', 'post_reel'])
+        activities_qs = Activity.objects.filter(base_q).select_related("actor", "target_content_type").order_by("-created_at")
+        paginator = Paginator(activities_qs, per_page)
+        page_obj = paginator.get_page(page)
+        activities = [_serialize_activity(a, request=request) for a in page_obj.object_list]
+
+        # Story feed: derive from StoryFeed for this user; fallback to recent stories excluding user's own
+        story_list = []
+        if include_stories:
+            feed_qs = StoryFeed.objects.filter(feedUser=user)
+            if feed_qs.exists():
+                feed_items = feed_qs.prefetch_related(Prefetch("feedLikedStory"), Prefetch("feedLovedStory"), Prefetch("feedCelebratedStory"), Prefetch("feedVisitedStory"))
+                # collect story ids from the M2M fields
+                ids = []
+                for fi in feed_items:
+                    ids += [s.id for s in fi.feedLikedStory.all()]
+                    ids += [s.id for s in fi.feedLovedStory.all()]
+                    ids += [s.id for s in fi.feedCelebratedStory.all()]
+                    ids += [s.id for s in fi.feedVisitedStory.all()]
+                ids = list(dict.fromkeys(ids))
+                if ids:
+                    qs = Story.objects.filter(id__in=ids).order_by("-updated_at")
+                else:
+                    qs = Story.objects.exclude(owner=user).order_by("-updated_at")[:20]
+            else:
+                qs = Story.objects.exclude(owner=user).order_by("-updated_at")[:20]
+            for s in qs:
+                story_list.append(_serialize_story(s, request=request))
+
+        # Reel feed: derive similarly from ReelFeed
+        reel_list = []
+        if include_reels:
+            feed_qs = ReelFeed.objects.filter(feedUser=user)
+            if feed_qs.exists():
+                feed_items = feed_qs.prefetch_related(Prefetch("feedLikedReel"), Prefetch("feedLovedReel"), Prefetch("feedCelebratedReel"), Prefetch("feedVisitedReel"))
+                ids = []
+                for fi in feed_items:
+                    ids += [r.id for r in fi.feedLikedReel.all()]
+                    ids += [r.id for r in fi.feedLovedReel.all()]
+                    ids += [r.id for r in fi.feedCelebratedReel.all()]
+                    ids += [r.id for r in fi.feedVisitedReel.all()]
+                ids = list(dict.fromkeys(ids))
+                if ids:
+                    qs = Reel.objects.filter(id__in=ids).order_by("-updated_at")
+                else:
+                    qs = Reel.objects.exclude(reel_owner=user).order_by("-updated_at")[:20]
+            else:
+                qs = Reel.objects.exclude(reel_owner=user).order_by("-updated_at")[:20]
+            for r in qs:
+                reel_list.append(_serialize_reel(r, request=request))
+
+        # Friend activities (recent)
+        friend_activities = []
+        if include_friend_activities:
+            fsa_qs = FriendStoryActivityFeed.objects.filter(ownerUser__in=following_ids).order_by("-updated_at")[:30]
+            fra_qs = FriendReelActivityFeed.objects.filter(ownerUser__in=following_ids).order_by("-updated_at")[:30]
+            # Merge and serialize minimally
+            for f in fsa_qs:
+                friend_activities.append({
+                    "id": f.pk,
+                    "type": "friend_story",
+                    "ownerUser": f.ownerUser_id,
+                    "action": f.action,
+                    "story_id": getattr(f, "story_id", None),
+                    "updated_at": f.updated_at.isoformat() if getattr(f, "updated_at", None) else None,
+                })
+            for f in fra_qs:
+                friend_activities.append({
+                    "id": f.pk,
+                    "type": "friend_reel",
+                    "ownerUser": f.ownerUser_id,
+                    "action": f.action,
+                    "reel_id": getattr(f, "reel_id", None),
+                    "updated_at": f.updated_at.isoformat() if getattr(f, "updated_at", None) else None,
+                })
+
+        return Response({
+            "activities": activities,
+            "activities_page": page,
+            "activities_has_next": page_obj.has_next(),
+            "stories": story_list,
+            "reels": reel_list,
+            "friend_activities": sorted(friend_activities, key=lambda x: x.get("updated_at") or "", reverse=True),
+        })
