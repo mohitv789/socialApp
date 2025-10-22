@@ -10,14 +10,28 @@
 
           <app-story-new-parta #step1></app-story-new-parta>
             <ng-template matStepLabel>Story Details</ng-template>
-            <div class="row">
+            <!-- <div class="row">
               <div class="col-md-6 stepper-buttons">
                 <button type="button" class="btn btn-primary float-start" (click)="onCancel()">Cancel</button>
               </div>
               <div class="col-md-6 stepper-buttons" *ngIf="!!step1.storyStartForm">
                 <button class="btn btn-primary float-end" matStepperNext >Next</button>
               </div>
+            </div> -->
+            <div class="row stepper-buttons">
+              <div class="col-md-6">
+                <button type="button" class="btn btn-primary float-start" (click)="onCancel()">Cancel</button>
+              </div>
+              <div class="col-md-6 text-end">
+                <button
+                  class="btn btn-primary"
+                  matStepperNext
+                >
+                  Next
+                </button>
+              </div>
             </div>
+
 
         </mat-step>
 

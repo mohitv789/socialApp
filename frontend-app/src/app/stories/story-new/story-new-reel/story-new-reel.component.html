@@ -1,12 +1,10 @@
+<div class="story-new-reel">
 
-<h2 style="text-align: center; background-color: #a0c9d5; border-bottom-left-radius: 5px; border-bottom-right-radius: 5px;padding: 10px;">New Reel</h2>
+  <h2 class="reel-title">New Reel</h2>
 
-<mat-dialog-content>
+  <mat-dialog-content>
 
-  <ng-container *ngIf="reelForm">
-
-    <ng-container [formGroup]="reelForm" enctype="multipart/form-data">
-
+    <form [formGroup]="reelForm" enctype="multipart/form-data">
       <div class="row">
         <div class="col-md-12">
           <div class="form-group">
@@ -19,43 +17,36 @@
           </div>
         </div>
       </div>
+
       <div class="row">
         <div class="col-8">
+          <div class="imagerow">
+            <div class="preview-card">
+              <img *ngIf="imageUrl; else placeholder" [src]="imageUrl" alt="Reel preview">
+              <ng-template #placeholder>
+                <img src="assets/placeholder.png" alt="Upload placeholder">
+              </ng-template>
+            </div>
+          </div>
 
-          <div *ngIf="!imageUrl" class="col-12 imagerow">
-            <img [src]="reelForm.get('image')!.value" style="max-width: 600px;">
-          </div>
-          <div *ngIf="!!imageUrl" class="col-12 imagerow">
-            <img [src]="imageUrl" style="max-width: 200px;">
-          </div>
         </div>
         <div class="col-4">
-
-
-          <input #fileInput type="file" id="upload-file-input" style="display:none;" accept="image/*" (change)="onFileSelected($event)"/>
-          <button mat-icon-button id='upload-file-button' (click)="onUploadButtonTrigger(fileInput)"> <i class="material-icons icons">add_a_photo</i></button>
+          <input #fileInput type="file"
+                 id="upload-file-input"
+                 accept="image/*"
+                 (change)="onFileSelected($event)">
+          <button mat-icon-button id="upload-file-button" (click)="onUploadButtonTrigger(fileInput)">
+            <i class="material-icons icons">add_a_photo</i>
+          </button>
         </div>
       </div>
-    </ng-container>
+    </form>
 
+  </mat-dialog-content>
 
-  </ng-container>
+  <mat-dialog-actions>
+    <button class="action-btn primary" (click)="onSave()">Add Reel</button>
+    <button class="action-btn cancel" (click)="onClose()">Cancel</button>
+  </mat-dialog-actions>
 
-</mat-dialog-content>
-
-<mat-dialog-actions>
-
-
-
-  <button class="btn btn-primary float-start" color="primary" (click)="onSave()">
-    Add Reel
-  </button>
-  <button class="btn btn-primary float-end" (click)="onClose()">
-    Cancel
-  </button>
-
-</mat-dialog-actions>
-
-
-
-
+</div>

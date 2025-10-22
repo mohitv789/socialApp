@@ -64,8 +64,8 @@ export class ReelDetailComponent implements OnInit{
 
   addComment() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = false;
-    dialogConfig.minWidth = "800px";
+    dialogConfig.panelClass = ['comment-dialog', 'center-dialog'];
+    dialogConfig.hasBackdrop = false;
     dialogConfig.disableClose = true;
 
     this.dialog.open(ReelCommentCreateComponent, dialogConfig)
@@ -107,9 +107,9 @@ export class ReelDetailComponent implements OnInit{
   }
   showReactionInfo() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = true;
-    dialogConfig.minWidth = "800px";
-    dialogConfig.disableClose = false;
+    dialogConfig.panelClass = ['reaction-dialog', 'center-dialog'];
+    dialogConfig.hasBackdrop = false;
+    dialogConfig.disableClose = true;
     let likeObj: any = {}
     this.likes.forEach((like_user: number) => {
       let fullName;
@@ -151,8 +151,8 @@ export class ReelDetailComponent implements OnInit{
   }
   editReel() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = true;
-    dialogConfig.minWidth = "1500px";
+    dialogConfig.panelClass = ['creation-dialog', 'center-dialog'];
+    dialogConfig.hasBackdrop = false;
     dialogConfig.disableClose = true;
     if (!this.reelData["image"].split(":")[0]) {
       this.reelData["image"] = "http://localhost:4500/" + this.reelData["image"];

@@ -1,7 +1,56 @@
+.container {
+  margin: 20px auto;
+  padding: 10px 20px;
+  justify-content: center;
+  max-width: 900px;
+}
+
+.row {
+  margin: 12px 0;
+}
+
+.imagerow {
+  margin: 20px auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 20px;
+}
+
+.imagerow > img {
+  width: 220px;
+  height: 220px;
+  border-radius: 8px;
+  object-fit: cover;
+  background-color: #a0c9d5;
+}
+
+.btn {
+  border: 2px solid #0c527b;
+  background-color: #a0c9d5;
+  color: black !important;
+  font-weight: 500;
+  padding: 8px 16px;
+  border-radius: 6px;
+  transition: 0.2s ease;
+  max-width: 150px;
+}
+
+.btn:hover {
+  box-shadow: 0 0 10px rgba(12,82,123,0.4);
+  text-decoration: underline;
+}
+
+input[type="file"] {
+  display: none;
+}
+
 .delete-btn {
   background-color: rgb(218, 71, 71);
+  color: white !important;
 }
 
 .edit-btn {
   background-color: rgb(45, 112, 7);
+  color: white !important;
 }

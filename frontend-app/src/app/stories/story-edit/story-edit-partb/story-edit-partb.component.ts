@@ -49,16 +49,18 @@ import { UtilService } from '../../image-editor/util.service';
     }
 
     addReel() {
-
       const dialogConfig = new MatDialogConfig();
-      dialogConfig.autoFocus = true;
-      dialogConfig.minWidth = "1500px";
+      dialogConfig.panelClass = ['creation-dialog', 'center-dialog'];
+      dialogConfig.hasBackdrop = false;
       dialogConfig.disableClose = true;
+
+      // Add both overlay-level and component-level classes
+      dialogConfig.panelClass = ['other-dialog-panel', 'story-new-reel-panel'];
+
       this.dialog.open(StoryNewReelComponent, dialogConfig)
         .afterClosed()
-        .subscribe((val : any) => {
+        .subscribe((val: any) => {
           if (val) {
-            console.log(val);
             const newReelGroup = this.fb.group({
               id: [val.id],
               caption: [val.caption],
@@ -68,6 +70,7 @@ import { UtilService } from '../../image-editor/util.service';
           }
       });
     }
+
 
     deleteReel(sectionIndex: number) {
       const reelId = this.reels.controls[sectionIndex].value.id;
@@ -81,32 +84,85 @@ import { UtilService } from '../../image-editor/util.service';
         this.reels.removeAt(0);
       }
     }
-    onEdit(sectionIndex: number) {
-      console.log(this.reels.value[sectionIndex]);
-      const dialogConfig = new MatDialogConfig();
+    // onEdit(sectionIndex: number) {
+    //   console.log(this.reels.value[sectionIndex]);
+    //   const dialogConfig = new MatDialogConfig();
       
-      dialogConfig.autoFocus = true;
-      dialogConfig.minWidth = "1500px";
-      dialogConfig.disableClose = true;
-      if (!this.reels.value[sectionIndex]["image"].split(":")[0]) {
-        this.reels.value[sectionIndex]["image"] = "http://localhost:4500/" + this.reels.value[sectionIndex]["image"];
-      }
-      dialogConfig.data = {
-        id: this.reels.value[sectionIndex]["id"],
-        image: this.reels.value[sectionIndex]["image"],
-        caption: this.reels.value[sectionIndex]["caption"]
-      }
-      this.dialog.open(ImageEditorComponent, dialogConfig)
-        .afterClosed()
-        .subscribe(val => {
-          if (val) {
-            console.log(val);
+    //   dialogConfig.autoFocus = true;
+    //   dialogConfig.minWidth = "1500px";
+    //   dialogConfig.disableClose = true;
+    //   dialogConfig.panelClass = 'other-dialog-panel';
+    //   if (!this.reels.value[sectionIndex]["image"].split(":")[0]) {
+    //     this.reels.value[sectionIndex]["image"] = "http://localhost:4500/" + this.reels.value[sectionIndex]["image"];
+    //   }
+    //   dialogConfig.data = {
+    //     id: this.reels.value[sectionIndex]["id"],
+    //     image: this.reels.value[sectionIndex]["image"],
+    //     caption: this.reels.value[sectionIndex]["caption"]
+    //   }
+    //   this.dialog.open(ImageEditorComponent, dialogConfig)
+    //     .afterClosed()
+    //     .subscribe(val => {
+    //       if (val) {
+    //         console.log(val);
 
-            this.reels.at(sectionIndex).patchValue({
-              image: "http://localhost:4500/" + val["image"],
-              caption: val["caption"]
-            });
-          }
-      });
-    }
+    //         this.reels.at(sectionIndex).patchValue({
+    //           image: "http://localhost:4500/" + val["image"],
+    //           caption: val["caption"]
+    //         });
+    //       }
+    //   });
+    // }
+
+  onEdit(sectionIndex: number) {
+    const reel = this.reels.value[sectionIndex];
+    console.log(reel);
+
+    const dialogConfig = new MatDialogConfig();
+    dialogConfig.panelClass = ['creation-dialog', 'center-dialog'];
+    dialogConfig.hasBackdrop = false;
+    dialogConfig.disableClose = true;
+
+    // base url - prefer using environment variable if available
+    const baseUrl = (window as any).ENV?.BACKEND_URL || 'http://localhost:4500';
+
+    // normalize stored image -> absolute url for the editor preview
+    const imageUrl = typeof reel.image === 'string' && reel.image.startsWith('http')
+      ? reel.image
+      : `${baseUrl}/${String(reel.image || '').replace(/^\/+/, '')}`;
+
+    dialogConfig.data = {
+      id: reel.id,
+      image: imageUrl,
+      caption: reel.caption
+    };
+
+    this.dialog.open(ImageEditorComponent, dialogConfig)
+      .afterClosed()
+      .subscribe(val => {
+        if (!val) return;
+
+        console.log('Image editor returned:', val);
+
+        // normalize returned image (val.image may be absolute or relative)
+        const returnedImage = typeof val.image === 'string' && val.image.startsWith('http')
+          ? val.image
+          : `${baseUrl}/${String(val.image || '').replace(/^\/+/, '')}`;
+
+        // update the form array entry so preview uses an absolute URL
+        this.reels.at(sectionIndex).patchValue({
+          image: returnedImage,
+          caption: val.caption
+        });
+
+        // keep fileTransferService.fileFieldList consistent (store relative path if needed)
+        // if your backend expects relative path, store val.image (relative). If backend uses absolute, adapt.
+        const newElement = {
+          id: reel.id,
+          image: val.image,       // keep original returned value (relative or absolute) for backend use
+          caption: val.caption
+        };
+    });
+  }
+
   }

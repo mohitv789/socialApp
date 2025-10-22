@@ -31,8 +31,8 @@ addReel() {
 
   const dialogConfig = new MatDialogConfig();
   
-  dialogConfig.autoFocus = true;
-  dialogConfig.minWidth = "800px";
+  dialogConfig.panelClass = ['creation-dialog', 'center-dialog'];
+  dialogConfig.hasBackdrop = false;
   dialogConfig.disableClose = true;
 
   this.dialog.open(StoryNewReelComponent, dialogConfig)
@@ -57,39 +57,88 @@ addReel() {
     })
   }
 
-  onEdit(sectionIndex: number) {
-    console.log(this.reels.value[sectionIndex]);
-    const dialogConfig = new MatDialogConfig();
+  // onEdit(sectionIndex: number) {
+  //   console.log(this.reels.value[sectionIndex]);
+  //   const dialogConfig = new MatDialogConfig();
     
-    dialogConfig.autoFocus = true;
-    dialogConfig.minWidth = "800px";
-    dialogConfig.disableClose = true; 
-    if (!this.reels.value[sectionIndex]["image"].split(":")[0]) {
-      this.reels.value[sectionIndex]["image"] = "http://localhost:4500/" + this.reels.value[sectionIndex]["image"];
-    }
+  //   dialogConfig.autoFocus = true;
+  //   dialogConfig.minWidth = "800px";
+  //   dialogConfig.disableClose = true; 
+  //   dialogConfig.panelClass = 'other-dialog-panel';
+  //   if (!this.reels.value[sectionIndex]["image"].split(":")[0]) {
+  //     this.reels.value[sectionIndex]["image"] = "http://localhost:4500/" + this.reels.value[sectionIndex]["image"];
+  //   }
+  //   dialogConfig.data = {
+  //     id: this.reels.value[sectionIndex]["id"],
+  //     image: this.reels.value[sectionIndex]["image"],
+  //     caption: this.reels.value[sectionIndex]["caption"],
+  //   }
+  //   this.dialog.open(ImageEditorComponent, dialogConfig)
+  //     .afterClosed()
+  //     .subscribe(val => {
+  //       if (val) {
+  //         this.reels.at(sectionIndex).patchValue({
+  //           image: "http://localhost:4500/" + val["image"],
+  //           caption: val["caption"]
+  //         });
+  //         const newElement = {
+  //           id: this.reels.value[sectionIndex]["id"],
+  //           image: val["image"],
+  //           caption: this.reels.value[sectionIndex]["caption"]
+  //         };
+  //         const index = this.fileTransferService.fileFieldList.findIndex(element => element.id === newElement.id);
+  //         if (index !== -1) {
+  //           this.fileTransferService.fileFieldList[index] = newElement;
+  //         }
+  //       }
+  //   });
+  // }
+
+  onEdit(sectionIndex: number) {
+    const reel = this.reels.value[sectionIndex];
+    console.log(reel);
+
+    const dialogConfig = new MatDialogConfig();
+    dialogConfig.panelClass = ['creation-dialog', 'center-dialog'];
+    dialogConfig.hasBackdrop = false;
+    dialogConfig.disableClose = true;
+
+    // Normalize URL (if it's relative, prefix; if it's absolute, leave as is)
+    const imageUrl = reel.image.startsWith('http') 
+      ? reel.image 
+      : `http://localhost:4500/${reel.image.replace(/^\/+/, '')}`;
+
     dialogConfig.data = {
-      id: this.reels.value[sectionIndex]["id"],
-      image: this.reels.value[sectionIndex]["image"],
-      caption: this.reels.value[sectionIndex]["caption"],
-    }
+      id: reel.id,
+      image: imageUrl,
+      caption: reel.caption,
+    };
+
     this.dialog.open(ImageEditorComponent, dialogConfig)
       .afterClosed()
       .subscribe(val => {
         if (val) {
+          const updatedImage = val.image.startsWith('http')
+            ? val.image
+            : `http://localhost:4500/${val.image.replace(/^\/+/, '')}`;
+
           this.reels.at(sectionIndex).patchValue({
-            image: "http://localhost:4500/" + val["image"],
-            caption: val["caption"]
+            image: updatedImage,
+            caption: val.caption
           });
-          const newElement = {
-            id: this.reels.value[sectionIndex]["id"],
-            image: val["image"],
-            caption: this.reels.value[sectionIndex]["caption"]
+
+          const updatedReel = {
+            id: reel.id,
+            image: val.image, // store relative path in backend-friendly format
+            caption: val.caption
           };
-          const index = this.fileTransferService.fileFieldList.findIndex(element => element.id === newElement.id);
+
+          const index = this.fileTransferService.fileFieldList.findIndex(e => e.id === reel.id);
           if (index !== -1) {
-            this.fileTransferService.fileFieldList[index] = newElement;
+            this.fileTransferService.fileFieldList[index] = updatedReel;
           }
         }
-    });
+      });
   }
+
 }

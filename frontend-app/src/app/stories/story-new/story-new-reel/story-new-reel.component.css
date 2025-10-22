@@ -1,29 +1,177 @@
-.imagerow {
-  margin: 10px auto;
+/* -----------------------------------------------------------
+   Story New Reel — scoped component CSS (story-new-reel.component.css)
+   Keeps all rules scoped under .story-new-reel
+------------------------------------------------------------*/
+.story-new-reel {
+  box-sizing: border-box;
+  font-family: Roboto, "Helvetica Neue", Arial, sans-serif;
+  display: block;
 }
-.imagerow > img {
+
+/* NOTE: mat-dialog-container is rendered outside the component's host
+   so this rule will not always match. If you need to control the
+   outer container, keep the global overlay rule in styles.scss.
+   However, many apps rely on ::ng-deep to tweak the container here. */
+:host ::ng-deep .mat-dialog-container {
+  max-width: 760px;
+  width: calc(100% - 32px);
+  padding: 0;
+  margin: 0 auto;
+  border-radius: 8px;
+  overflow: hidden; /* keep children contained (prevents image leaking out) */
+  position: relative;
+}
+
+/* Header / title bar inside the component */
+.story-new-reel .reel-title {
+  margin: 0;
+  text-align: center;
+  background-color: #a0c9d5;
+  color: #08353f;
+  padding: 10px 12px;
+  font-weight: 600;
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 5px;
+}
+
+/* inner content wrapper */
+.story-new-reel mat-dialog-content {
+  padding: 18px 22px;
+  display: block;
+  box-sizing: border-box;
+}
+
+/* layout helpers */
+.story-new-reel .row {
+  display:flex;
+  flex-wrap:wrap;
+  align-items:flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.story-new-reel .col-8 { flex: 1 1 60%; min-width: 220px; }
+.story-new-reel .col-4 { flex: 0 0 160px; min-width: 140px; display:flex; align-items:flex-start; justify-content:center; }
+
+/* IMAGE PREVIEW
+   Use a card wrapper so transparent PNGs don't reveal the overlay */
+.story-new-reel .imagerow {
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  width:100%;
+  padding: 6px 0 14px;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Card that masks transparent pixels and gives a nice shadowed look */
+.story-new-reel .imagerow .preview-card {
   width: 250px;
   height: 250px;
-  overflow: hidden;
-  background-color: #a0c9d5;
-  display:block;
-  margin:auto;
+  background: #a0c9d5;           /* visible color behind transparent areas */
+  border-radius: 10px;
+  overflow: hidden;              /* keep image inside card */
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+  display: inline-block;
+  padding: 6px;                  /* inner padding so rounded corners show */
+  box-sizing: border-box;
 }
-.btn {
-  border: 3px solid;
-  margin: 5px;
-  border-image-slice: 1;
-  background-color: #a0c9d5;
-  -webkit-text-fill-color: black !important;
-  text-decoration: none;
-  color: black !important;
-  max-width: 150px;
+
+/* The image fills the preview-card, preserves aspect ratio */
+.story-new-reel .imagerow .preview-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 6px;
+  background: transparent;
 }
-.btn:hover, .btn:focus {
-  -webkit-text-fill-color: black !important;
-  margin: 5px;
+
+/* Smaller thumbnail variant */
+.story-new-reel .imagerow.thumbnail .preview-card { width:140px; height:140px; }
+
+/* Keep native file input hidden but accessible */
+.story-new-reel input[type="file"] { display:none !important; }
+
+/* Upload icon/button styling */
+.story-new-reel #upload-file-button {
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:44px;
+  height:44px;
+  border-radius:8px;
+  border: 2px solid rgba(12,82,123,0.08);
+  background: linear-gradient(180deg,#e6f2f4 0%,#d2eaf0 100%);
+  cursor:pointer;
+  transition: transform .12s ease, box-shadow .12s ease;
+  margin-left: 8px;
+  z-index: 3;
+}
+.story-new-reel #upload-file-button .material-icons { font-size:20px; color:#08353f; }
+.story-new-reel #upload-file-button:hover { transform: translateY(-2px); box-shadow:0 6px 12px rgba(12,82,123,0.12); }
+
+/* ACTION BUTTONS - scoped to avoid global collisions */
+.story-new-reel .action-btn,
+.story-new-reel .btn {
+  display: inline-block;
   border: 3px solid #0c527b !important;
-  box-shadow: #0c2b57 1px 0 10px;
-  text-decoration: underline;
-  max-width: 150px;
+  background-color: #a0c9d5 !important;
+  color: #000 !important;
+  padding: 8px 14px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: box-shadow .12s ease, transform .08s ease;
+  vertical-align: middle;
+}
+
+.story-new-reel .action-btn:hover,
+.story-new-reel .btn:hover,
+.story-new-reel .action-btn:focus,
+.story-new-reel .btn:focus {
+  border-color: #0c527b !important;
+  box-shadow: 0 6px 12px rgba(12,43,87,0.12);
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+
+.story-new-reel .action-btn.cancel { background:#dfeff2 !important; color:#08353f !important; }
+.story-new-reel .action-btn.primary { background:#a0c9d5 !important; color:#000 !important; }
+
+/* Ensure the mat-dialog-actions inside this component aligns and stays inside the container */
+:host ::ng-deep .mat-dialog-container mat-dialog-actions {
+  display:flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 12px 18px !important;
+  border-top: 1px solid #f1f3f4 !important;
+  background: #fff !important;
+  box-sizing: border-box !important;
+  position: relative !important;
+  z-index: 4 !important;
+}
+
+/* Floats & inputs */
+.story-new-reel .float-start { margin-right: auto; }
+.story-new-reel .float-end { margin-left: auto; }
+
+.story-new-reel input.form-control[type="text"],
+.story-new-reel input[type="text"] {
+  width:100%;
+  padding:8px 10px;
+  border:1px solid #d6d8da;
+  border-radius:6px;
+  outline:none;
+}
+.story-new-reel input:focus { border-color:#0c527b; box-shadow:0 0 6px rgba(12,82,123,0.12); }
+
+/* Responsive */
+@media (max-width: 720px) {
+  .story-new-reel .col-8, .story-new-reel .col-4 { flex-basis:100%; }
+  .story-new-reel .imagerow .preview-card { width: 160px; height: 160px; }
+  :host ::ng-deep .mat-dialog-container mat-dialog-actions { flex-direction: column; gap:10px; align-items: stretch; }
+  .story-new-reel .action-btn, .story-new-reel .btn { width:100%; text-align:center; }
 }

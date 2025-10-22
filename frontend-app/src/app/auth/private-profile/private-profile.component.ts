@@ -88,12 +88,9 @@ export class PrivateProfileComponent implements OnInit{
 
   addProfile() {
     const dialogConfig = new MatDialogConfig();
-    dialogConfig.autoFocus = true;
-    dialogConfig.minWidth = "800px";
+    dialogConfig.panelClass = ['creation-dialog', 'center-dialog'];
+    dialogConfig.hasBackdrop = false;
     dialogConfig.disableClose = true;
-    dialogConfig.panelClass = ['custom-modalbox', 'center-dialog']
-    dialogConfig.hasBackdrop = true;
-    dialogConfig.backdropClass = 'custom-backdrop';
     this.dialog.open(PrivateProfileCreateComponent, dialogConfig)
       .afterClosed()
       .subscribe((val:any) => {

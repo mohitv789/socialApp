@@ -8,6 +8,12 @@
   max-width: 800px;
   max-height: 800px;
 }
+.container {
+  margin: 20px auto;
+  padding: 20px auto;
+  justify-content: center;
+  width: 800px;
+}
 
 a.btn {
   border: 3px solid;

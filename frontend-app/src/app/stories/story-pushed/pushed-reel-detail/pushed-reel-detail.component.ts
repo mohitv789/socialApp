@@ -68,8 +68,8 @@ export class PushedReelDetailComponent implements OnInit{
   addComment() {
     const dialogConfig = new MatDialogConfig();
     
-    dialogConfig.autoFocus = true;
-    dialogConfig.minWidth = "800px";
+    dialogConfig.panelClass = ['comment-dialog', 'center-dialog'];
+    dialogConfig.hasBackdrop = false;
     dialogConfig.disableClose = true;
 
 
@@ -189,9 +189,9 @@ export class PushedReelDetailComponent implements OnInit{
   showReactionInfo() {
     const dialogConfig = new MatDialogConfig();
     
-    dialogConfig.autoFocus = true;
-    dialogConfig.minWidth = "800px";
-    dialogConfig.disableClose = false;
+    dialogConfig.panelClass = ['reaction-dialog', 'center-dialog'];
+    dialogConfig.hasBackdrop = false;
+    dialogConfig.disableClose = true;
     let likeObj: any = {}
     this.likes.forEach((like_user: number) => {
       let fullName;
@@ -470,9 +470,8 @@ export class PushedReelDetailComponent implements OnInit{
   
   createReelChatRoom() {
     const dialogConfig = new MatDialogConfig();
-    
-    dialogConfig.autoFocus = true;
-    dialogConfig.minWidth = "800px";
+    dialogConfig.panelClass = ['creation-dialog', 'center-dialog'];
+    dialogConfig.hasBackdrop = false;
     dialogConfig.disableClose = true;
     let reelObj: any = {}
     reelObj = {...this.reel}
@@ -520,8 +519,8 @@ export class PushedReelDetailComponent implements OnInit{
         this.canshowJoinChatroom = false;
         const dialogConfig = new MatDialogConfig();
         
-        dialogConfig.autoFocus = true;
-        dialogConfig.minWidth = "800px";
+        dialogConfig.panelClass = ['creation-dialog', 'center-dialog'];
+        dialogConfig.hasBackdrop = false;
         dialogConfig.disableClose = true;
         let reelObj: any = {}
         reelObj = {...this.reel}
