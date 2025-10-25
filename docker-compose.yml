@@ -65,20 +65,6 @@ services:
     volumes:
       - static-ea-data:/vol/static
   
-  frontend_ea:
-    build:
-      context: ./frontend-app
-      dockerfile: Dockerfile
-    image: mywebapp/frontend:latest
-    container_name: frontend_ea
-    restart: always
-    ports:
-      - "4200:80"     # host:container — this is what makes it visible in browser
-    depends_on:
-      - backend_ea
-      - websockets
-    environment:
-      - NODE_ENV=production
 
 
 

@@ -22,13 +22,4 @@ server {
         include /etc/nginx/ws_proxy.params;
     }
 
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    location ~* \.(?:css|js|jpg|jpeg|png|gif|ico|svg|woff2?|ttf|eot)$ {
-        expires 30d;
-        access_log off;
-    }
-
 }
