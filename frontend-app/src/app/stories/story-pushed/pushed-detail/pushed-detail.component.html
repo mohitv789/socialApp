@@ -1,6 +1,6 @@
 
 <div class="container" *ngIf="!!loggedInUserId">
-  <div *ngIf="(story$ | async) as story" class="row">
+  <div *ngIf="(story$ | async) as story" class="row story-grid">
 
     <h4 style="background-color: pink;" *ngIf="!!isBlocking">You have been blocked by {{ fullName }}, hence cannot start or go to chatrooms.</h4>
 

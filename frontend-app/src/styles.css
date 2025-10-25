@@ -109,7 +109,7 @@ html, body {
    (3) Reaction Info — Small Floating Dialog
    ============================================ */
 .cdk-overlay-pane.reaction-dialog {
-  width: 400px !important;
+  width: 750px !important;
   height: auto !important;
   background: #fff !important;
   border-radius: 10px !important;
@@ -126,7 +126,7 @@ html, body {
    (4) Add Comment — Small Floating Dialog
    ============================================ */
 .cdk-overlay-pane.comment-dialog {
-  width: 500px !important;
+  width: 750px !important;
   height: auto !important;
   background: #fff !important;
   border-radius: 10px;
@@ -141,7 +141,7 @@ html, body {
    (5) Story / Reel / Profile Creation — Medium Dialog
    ============================================ */
 .cdk-overlay-pane.creation-dialog {
-  width: 800px !important;
+  width: 1500px !important;
   height: auto !important;
   background: #fff !important;
   border-radius: 12px;
@@ -179,3 +179,4 @@ html, body {
 .creation-dialog .close-overlay:hover {
   background: rgba(255,0,0,0.3);
 }
+

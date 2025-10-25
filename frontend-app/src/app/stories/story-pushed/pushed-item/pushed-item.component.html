@@ -1,21 +1,15 @@
-<div class="container card" *ngIf="!!story">
 
-  <img class="card-img-top img-fluid" style="max-height:600px; border-top-left-radius: 5px;border-top-right-radius: 5px;" [src]="'http://localhost:4500' + story.image" alt="story.title">
-  <div class="card-body mb-0">
-    <h2 class="card-title">{{ story.title | slice:0:50}}</h2>
-    <p class="card-text">{{  story.longDescription | slice:0:100}}</p>
-  </div>
-  <div class="button-row">
-    <div class="col-md-6 mb-0">
-      <a class="btn float-start" *ngIf="reels.length > 0" (click)="goToFeedReelList()">Show Reels</a>
-    </div>
-    <div class="col-md-6 mb-0">
-      <a class="btn float-end" (click)="goToStoryDetail()">Story Detail</a>
-    </div>
-  </div>
-  <div class="card-footer">
-    <p class="float-start text-muted mb-0">{{ commentNumbers }} Comments</p>
-    <p class="float-end text-muted mb-0">{{ likeNumbers }} Likes, {{ loveNumbers }} Loves and {{ celebrateNumbers }} Celebrations</p>
-  </div>
+<div class="story-grid">
+  <div class="story-card">
 
+    <img [src]="getImageUrl(story.image)" class="story-img" alt="story image" />
+    <div class="story-body">
+      <h4>{{ story.title }}</h4>
+      <p>{{ story.description }}</p>
+
+      <div class="story-actions">
+        <button class="btn" (click)="goToStoryDetail()">Watch Story</button>
+      </div>
+    </div>
+  </div>
 </div>

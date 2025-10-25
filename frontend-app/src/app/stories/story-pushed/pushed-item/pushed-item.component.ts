@@ -1,19 +1,31 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, OnChanges, OnDestroy, SimpleChanges } from '@angular/core';
 import { Story } from '../../models/Story';
-import { ActivatedRoute, Params, Router } from '@angular/router';
-import { Observable } from 'rxjs';
+import { ActivatedRoute, Router } from '@angular/router';
 import { StoryHTTPService } from '../../services/stories.service';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
-import { Reel } from '../../models/Reel';
 import { ReelDialogComponent } from '../../reel/reel-dialog/reel-dialog.component';
-import { StoryComment } from '../../models/StoryComment';
-
+import { Reel } from '../../models/Reel';
 @Component({
   selector: 'app-pushed-item',
   templateUrl: './pushed-item.component.html',
   styleUrls: ['./pushed-item.component.css']
 })
-export class PushedItemComponent {
+export class PushedItemComponent implements OnChanges, OnDestroy , OnChanges{
+
+  // track object URLs we create so we can revoke them
+  private objectUrls: string[] = [];
+  BACKEND_BASE = 'http://localhost:4500';
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['story']) {
+      // nothing else required here for now — getImageUrl handles the input types
+    }
+  }
+
+  /**
+   * Accepts either a backend path (string) or a File object (from file input).
+   * Returns a usable URL for <img src="...">.
+   */
+  
   @Input() story!: Story;
   @Input() feed_stories_comments!: any;
   reels: object[] = [];
@@ -24,7 +36,12 @@ export class PushedItemComponent {
   constructor(private route: ActivatedRoute,private sService: StoryHTTPService,private router: Router,
     private dialog: MatDialog) {}
 
-  ngOnInit(): void {
+
+  
+
+    
+
+    ngOnInit(): void {
 
 
     this.story.reels.forEach((reelItem: Reel) => {
@@ -55,6 +72,9 @@ export class PushedItemComponent {
 
 
   goToFeedReelList() {
+    if (this.dialog.openDialogs.length > 0) {
+      this.dialog.closeAll();
+    }
     const dialogConfig = new MatDialogConfig();
     dialogConfig.panelClass = ['feed-reel-dialog', 'center-dialog'];
     dialogConfig.hasBackdrop = true;
@@ -74,5 +94,41 @@ export class PushedItemComponent {
     this.router.navigate(['/feed/' + this.story.id]);
   }
 
+  onImgError(ev: Event) {
+    const img = ev.target as HTMLImageElement;
+    img.src = 'assets/img/placeholder.png';
+  }
+
+  ngOnDestroy() {
+    // revoke any created object URLs to avoid memory leaks
+    this.objectUrls.forEach(url => {
+      try { URL.revokeObjectURL(url); } catch (e) { /* noop */ }
+    });
+    this.objectUrls = [];
+  }
+
+  
+
+  getImageUrl(src?: string | File | null): string {
+    const placeholder = 'assets/img/placeholder.png';
+    if (!src) return placeholder;
+
+    // If it's a File object (preview scenario)
+    if (src instanceof File) {
+      try { return URL.createObjectURL(src); } catch { return placeholder; }
+    }
+
+    if (typeof src !== 'string') return placeholder;
+
+    // If already absolute URL
+    if (/^https?:\/\//.test(src)) return src;
+
+    // If it's like 'static/media/uploads/story/...' or 'uploads/story/...'
+    // remove any leading slashes and prefix backend base:
+    const cleaned = src.replace(/^\/+/, '');
+    return `${this.BACKEND_BASE}/${cleaned}`;
+  }
 
 }
+
+

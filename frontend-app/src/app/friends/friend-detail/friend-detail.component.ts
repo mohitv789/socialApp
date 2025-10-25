@@ -6,6 +6,12 @@ import { ProfileHTTPService } from 'src/app/auth/services/profile.service';
 import { FriendHTTPService } from '../services/friend.service';
 import { Router } from '@angular/router';
 import { lastValueFrom } from 'rxjs';
+import { MatSnackBar } from '@angular/material/snack-bar';
+import { ChatroomHTTPService } from 'src/app/webchat/services/chatroom.service';
+import { StoryHTTPService } from 'src/app/stories/services/stories.service';
+import { ReelsHTTPService } from 'src/app/stories/services/reels.service';
+import { Reel } from 'src/app/stories/models/Reel';
+import { Story } from 'src/app/stories/models/Story';
 
 @Component({
   selector: 'app-friend-detail',
@@ -27,7 +33,14 @@ export class FriendDetailComponent implements OnInit {
   isFollower: boolean = false;
   isBlocked: boolean = false;
   isBlocking: boolean = false;
-  constructor(private route: ActivatedRoute, private pService: ProfileHTTPService,private aService: AuthService, private fService: FriendHTTPService,private router: Router) {}
+  chatrooms: any[] = [];  
+  showConfirm = false;
+
+  confirmRemoveFriend() {
+    this.removeFriend(); // call your existing removeFriend() method
+    this.showConfirm = false;
+  }
+  constructor(private chatService: ChatroomHTTPService , private snackBar: MatSnackBar, private route: ActivatedRoute, private pService: ProfileHTTPService,private aService: AuthService, private fService: FriendHTTPService,private router: Router, private sService: StoryHTTPService, private rService: ReelsHTTPService) {}
 
 
 
@@ -87,57 +100,72 @@ export class FriendDetailComponent implements OnInit {
   goToReelDetail(reelId: string) {
     this.router.navigateByUrl('/feed/reel/' + reelId);
   }
-
+  onClose(input: Boolean) {
+    console.log("Dialog closed: ", input);
+  }
   removeFriend() {
-    this.pService.removeFriend(
-      {
-        "to_user": this.friendId,
-      }).subscribe(()=>this.router.navigateByUrl('/friends'));
+    this.pService.removeFriend({ "to_user": this.friendId }).subscribe({
+      next: () => {
+        // ✅ show success toast
+        this.snackBar.open('Friendship Removed Successfully!', '', {
+          duration: 4000,
+          horizontalPosition: 'center',
+          verticalPosition: 'bottom',
+          panelClass: ['chrome-toast']
+        });
+
+        console.log('Friendship removed permanently');
+        // optional redirect after a short delay
+        setTimeout(() => this.router.navigateByUrl('/me/friends'), 5000);
+      },
+      error: (err) => {
+        console.error('Error removing friend:', err);
+        // ⚠️ show error toast
+        this.snackBar.open('Failed to remove friend. Please try again.', '', {
+          duration: 4000,
+          horizontalPosition: 'center',
+          verticalPosition: 'bottom',
+          panelClass: ['chrome-toast']
+        });
+      }
+    });
   }
 
+
+
+
   private async loadRelationState() {
-    // try {
-    //   const isFollowing$ = this.pService.findisFollowing(this.friendId);
-    //   this.isFollowingResult = await lastValueFrom(isFollowing$);
-    //   if (this.isFollowingResult["message"] == "Follow relationship not found for user." ) {
-    //     this.isFollowing = false;
-    //   }
-    //   this.isFollowing = true;
-    // } catch (error) {
-    //   console.log(error);
-    // }
-
-    // try {
-    //   const isFollower$ = this.pService.findisFollower(this.friendId);
-    //   this.isFollowerResult = await lastValueFrom(isFollower$);
-    //   if (this.isFollowerResult["message"] == "Follow relationship not found for user." ) {
-    //     this.isFollower = false;
-    //   }
-    //   this.isFollower = true;
-    // } catch (error) {
-    //   console.log(error);
-    // }
-
-    // try {
-    //   const isBlocked$ = this.pService.findisBlocked(this.friendId);
-    //   this.isBlockedResult = await lastValueFrom(isBlocked$);
-    //   if (this.isBlockedResult["message"] == "Block relationship not found for user." ) {
-    //     this.isBlocked = false;
-    //   }
-    //   this.isBlocked = true;
-    // } catch (error) {
-    //   console.log(error);
-    // }
-
-    // try {
-    //   const isBlocking$ = this.pService.findisBlocking(this.friendId);
-    //   this.isBlockingResult = await lastValueFrom(isBlocking$);
-    //   if (this.isBlockingResult["message"] == "Block relationship not found for user." ) {
-    //     this.isBlocking = false;
-    //   }
-    //   this.isBlocking = true;
-    // } catch (error) {
-    //   console.log(error);
-    // }
+    this.chatrooms = []
+      this.chatService.showChatRooms().subscribe((resp:any) => {
+        if (!!resp) {
+  
+          resp.forEach((data:any)=>{
+            let pushed_obj: any = {}
+            if (data.owner === this.isAuth) {
+              pushed_obj["chatroom_id"] = data.id;
+              pushed_obj["chatroom_owner"] = data.owner;
+              if (!!data.story) {
+                pushed_obj["chatroom_type"] = "story"
+                pushed_obj["chatroom_object_id"] = data.story
+                const story_data$ = this.sService.fetchFeedStory(data.story);
+                story_data$.subscribe((feed_story:Story)=>{
+                  pushed_obj["chatroom_object_title"] = feed_story.title
+                })
+              }
+              if (!!data.reel) {
+                pushed_obj["chatroom_type"] = "reel"
+                pushed_obj["chatroom_object_id"] = data.reel
+                const reel_data$ = this.rService.fetchReelforFeed(data.reel);
+                reel_data$.subscribe((feed_reel:Reel)=>{
+                  console.log(feed_reel);
+                  pushed_obj["chatroom_object_title"] = feed_reel.caption
+                })
+              }
+  
+              this.chatrooms.push(pushed_obj);
+            }
+          })
+        }
+      })
   }
 }

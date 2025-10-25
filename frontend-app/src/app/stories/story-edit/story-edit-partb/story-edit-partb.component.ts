@@ -49,6 +49,9 @@ import { UtilService } from '../../image-editor/util.service';
     }
 
     addReel() {
+      if (this.dialog.openDialogs.length > 0) {
+        this.dialog.closeAll();
+      }
       const dialogConfig = new MatDialogConfig();
       dialogConfig.panelClass = ['creation-dialog', 'center-dialog'];
       dialogConfig.hasBackdrop = false;
@@ -116,7 +119,9 @@ import { UtilService } from '../../image-editor/util.service';
 
   onEdit(sectionIndex: number) {
     const reel = this.reels.value[sectionIndex];
-    console.log(reel);
+    if (this.dialog.openDialogs.length > 0) {
+      this.dialog.closeAll();
+    }
 
     const dialogConfig = new MatDialogConfig();
     dialogConfig.panelClass = ['creation-dialog', 'center-dialog'];

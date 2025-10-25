@@ -66,6 +66,9 @@ export class PushedReelDetailComponent implements OnInit{
   }
 
   addComment() {
+    if (this.dialog.openDialogs.length > 0) {
+      this.dialog.closeAll();
+    }
     const dialogConfig = new MatDialogConfig();
     
     dialogConfig.panelClass = ['comment-dialog', 'center-dialog'];
@@ -187,6 +190,9 @@ export class PushedReelDetailComponent implements OnInit{
   }
 
   showReactionInfo() {
+    if (this.dialog.openDialogs.length > 0) {
+      this.dialog.closeAll();
+    }
     const dialogConfig = new MatDialogConfig();
     
     dialogConfig.panelClass = ['reaction-dialog', 'center-dialog'];
@@ -469,6 +475,9 @@ export class PushedReelDetailComponent implements OnInit{
   // ---- small cleanup in addComment: do NOT resubscribe to friends$ there ----
   
   createReelChatRoom() {
+    if (this.dialog.openDialogs.length > 0) {
+      this.dialog.closeAll();
+    }
     const dialogConfig = new MatDialogConfig();
     dialogConfig.panelClass = ['creation-dialog', 'center-dialog'];
     dialogConfig.hasBackdrop = false;
@@ -517,6 +526,9 @@ export class PushedReelDetailComponent implements OnInit{
         this.chatroom_membership = true;
         this.showLeaveChatroom = true;
         this.canshowJoinChatroom = false;
+        if (this.dialog.openDialogs.length > 0) {
+          this.dialog.closeAll();
+        }
         const dialogConfig = new MatDialogConfig();
         
         dialogConfig.panelClass = ['creation-dialog', 'center-dialog'];

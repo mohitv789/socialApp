@@ -29,6 +29,10 @@ get reels() {
 
 addReel() {
 
+  if (this.dialog.openDialogs.length > 0) {
+    this.dialog.closeAll();
+  }
+
   const dialogConfig = new MatDialogConfig();
   
   dialogConfig.panelClass = ['creation-dialog', 'center-dialog'];
@@ -97,6 +101,10 @@ addReel() {
   onEdit(sectionIndex: number) {
     const reel = this.reels.value[sectionIndex];
     console.log(reel);
+
+    if (this.dialog.openDialogs.length > 0) {
+      this.dialog.closeAll();
+    }
 
     const dialogConfig = new MatDialogConfig();
     dialogConfig.panelClass = ['creation-dialog', 'center-dialog'];

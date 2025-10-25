@@ -7,3 +7,13 @@
 .carousel-control-prev-icon{
   filter: invert(100%);
 }
+
+.carousel-caption {
+  background-color: #ffffff;
+  border: 2px solid black;
+  border-radius: 5px;
+  padding: 10px;
+  margin-bottom: 20px;
+  text-align: center;
+  color: black;
+}

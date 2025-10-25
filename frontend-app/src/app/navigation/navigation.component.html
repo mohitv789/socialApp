@@ -1,4 +1,4 @@
-<header class="main">
+<!-- <header class="main">
   <div class="row">
     <div class="d-flex flex-wrap align-items-center justify-content-center justify-content-lg-end">
       <div class="text-end">
@@ -19,6 +19,62 @@
           <li><a routerLink="/register" class="btn btn-outline-light me-2">Register</a></li>
       </ul>
       </div>
+    </div>
+  </div>
+</header> -->
+
+
+<header class="app-header">
+  <div class="container">
+    <div class="header-inner">
+      <!-- LEFT: Clickable logo -->
+      <a routerLink="/" class="logo" aria-label="Go to home">
+        <!-- replace with <img> if you have a logo image -->
+        <img src="assets/logo.jpg" alt="App logo" class="logo-img" />
+        <!-- OR text fallback:
+        <span class="logo-text">MyApp</span>
+        -->
+      </a>
+
+      <!-- RIGHT: Authenticated nav -->
+      <nav class="nav-right" *ngIf="authenticated; else anonNav" aria-label="Main navigation">
+        <!-- Stories dropdown -->
+        <div class="dropdown" tabindex="0" (keydown.enter)="openDropdown($event)" (keydown.space)="openDropdown($event)">
+          <button class="dropbtn" aria-haspopup="true" aria-expanded="false">
+            Stories <span class="caret">▾</span>
+          </button>
+          <div class="dropdown-content" role="menu">
+            <a routerLink="/feed" role="menuitem">Feed Stories</a>
+            <a routerLink="/story" role="menuitem">Your Stories</a>
+            <a routerLink="/story/new" role="menuitem">Create Story</a>
+          </div>
+        </div>
+
+        <!-- Your Settings dropdown -->
+        <div class="dropdown" tabindex="0" (keydown.enter)="openDropdown($event)" (keydown.space)="openDropdown($event)">
+          <button class="dropbtn" aria-haspopup="true" aria-expanded="false">
+            Your Settings <span class="caret">▾</span>
+          </button>
+          <div class="dropdown-content" role="menu">
+            <a routerLink="/profile/personal" role="menuitem">Your Profile</a>
+            <a routerLink="/combined-feed" role="menuitem">Activity Feed</a>
+            <a routerLink="/friends" role="menuitem">Your Friendship</a>
+          </div>
+        </div>
+
+        <!-- Logout (right-most) -->
+        <button class="btn logout" (click)="logout()" aria-label="Logout">
+          Logout
+        </button>
+      </nav>
+
+      <!-- Non-authenticated nav -->
+      <ng-template #anonNav>
+        <nav class="nav-right" aria-label="Auth navigation">
+          <a routerLink="/login" class="btn">Login</a>
+          <a routerLink="/register" class="btn outline">Register</a>
+        </nav>
+      </ng-template>
     </div>
   </div>
 </header>

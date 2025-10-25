@@ -70,6 +70,9 @@ export class PushedDetailComponent implements OnInit{
   }
 
   addComment() {
+    if (this.dialog.openDialogs.length > 0) {
+      this.dialog.closeAll();
+    }
     const dialogConfig = new MatDialogConfig();
     
     dialogConfig.panelClass = ['comment-dialog', 'center-dialog'];
@@ -117,6 +120,9 @@ export class PushedDetailComponent implements OnInit{
 
 
   showReactionInfo() {
+    if (this.dialog.openDialogs.length > 0) {
+      this.dialog.closeAll();
+    }
     const dialogConfig = new MatDialogConfig();
   
     dialogConfig.panelClass = ['reaction-dialog', 'center-dialog'];
@@ -376,6 +382,9 @@ export class PushedDetailComponent implements OnInit{
     });
   }
   createStoryChatRoom() {
+    if (this.dialog.openDialogs.length > 0) {
+      this.dialog.closeAll();
+    }
     const dialogConfig = new MatDialogConfig();
     
     dialogConfig.panelClass = ['creation-dialog', 'center-dialog'];
@@ -425,6 +434,9 @@ export class PushedDetailComponent implements OnInit{
         this.chatroom_membership = true;
         this.showLeaveChatroom = true;
         this.canshowJoinChatroom = false;
+        if (this.dialog.openDialogs.length > 0) {
+          this.dialog.closeAll();
+        }
         const dialogConfig = new MatDialogConfig();
         
         dialogConfig.panelClass = ['creation-dialog', 'center-dialog'];

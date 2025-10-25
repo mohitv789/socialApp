@@ -44,6 +44,8 @@ import { ChatFormComponent } from './webchat/chat-form/chat-form.component';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { GlobalErrorHandler } from '../global-error-handler';
+import { MatCardModule } from '@angular/material/card';
+
 import { IonicModule } from '@ionic/angular';
 import { FeedService } from './feed-app/feed.service';
 import { FeedAppComponent } from './feed-app/feed-app.component';
@@ -97,6 +99,7 @@ import { FeedAppComponent } from './feed-app/feed-app.component';
     MatFormFieldModule,
     MatInputModule,
     ReactiveFormsModule,
+    MatCardModule,
     IonicModule.forRoot()
   ],
   providers: [

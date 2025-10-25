@@ -1,60 +1,101 @@
-<div class="container" *ngIf="!!isAuth">
-  <div class="row" *ngIf="!!profile">
-    <div class="mainrow" style="padding: 0px;">
-      <div class="col-md-4 float-start">
-        <img [src]="'http://localhost:4500' + profile.avatar" alt="{{ fullName }}" class="avatar card-img-top img-fluid">
+<div class="container" *ngIf="isAuth">
+  <!-- PROFILE SECTION -->
+  <div class="mainrow" *ngIf="profile">
+    <div class="profile-section">
+      <div class="avatar-section">
+        <img
+          [src]="'http://localhost:4500' + profile.avatar"
+          alt="{{ fullName }}"
+          class="avatar"
+        />
       </div>
-      <div class="col-md-1"></div>
-      <div class="col-md-7 float-end">
-        <div class="row">
-          <button style="margin: 10px auto;" class="btn btn-primary" (click)="removeFriend()">Remove Friend</button>
-        </div>
-        <div class="row">
-          <p class="heading"><strong>Status : </strong>{{ profile.status }}</p>
-        </div>
-        <div class="row">
-          <h3>{{ fullName }}</h3>
-          <p>{{ profile.bio }}</p>
-          <p>{{ profile.url }}</p>
-          <p>{{ profile.gender }}</p>
-          <p>{{ profile.city }}</p>
-        </div>
-        <div class="row">
-          <div class="row" *ngIf="!!isFollower || !!isFollowing">
-            <div class="col-md-6">
-              <h3 *ngIf="!!isFollower">{{ fullName }} is Following You</h3>
-              <h3 *ngIf="!isFollower">{{ fullName }} is not Following You</h3>
-            </div>
-            <div class="col-md-6">
-              <h3 *ngIf="!!isFollowing">You are follwing {{ fullName }}</h3>
-              <h3 *ngIf="!isFollowing">You are not follwing {{ fullName }}</h3>
-            </div>
-          </div>
-          <div class="row" *ngIf="!!isBlocked || !!isBlocking">
-            <div class="col-md-6">
-              <h3 *ngIf="!!isBlocked">You have blocked {{ fullName }}</h3>
-              <h3 *ngIf="!isBlocked">You have not blocked {{ fullName }}</h3>
-            </div>
-            <div class="col-md-6">
-              <h3 *ngIf="!!isBlocking">{{ fullName }} has blocked you</h3>
-              <h3 *ngIf="!isBlocking">{{ fullName }} has not blocked you</h3>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="activities" *ngIf="!!storyFeed.length">
-      <h3 style="text-align: center; padding: 10px auto; margin: 10px auto;">Activity by your friend {{fullName}}</h3>
-      <hr>
-      <div class="col-md-12">
-        <div class="row feed-item" *ngFor="let data of storyFeed">
-          <p style="margin: auto;">{{ fullName }} has {{ data.action }} <a style="cursor: pointer;color: #6c757d;" (click)="goToStoryDetail(data.story.id)">{{ data.story.title }}</a></p>
-        </div>
-        <div class="row feed-item" *ngFor="let data of reelFeed">
-          <p style="margin: auto;">{{ fullName }} has {{ data.action }} <a style="cursor: pointer;color: #6c757d;" (click)="goToReelDetail(data.reel.id)">{{ data.reel.caption }}</a></p>
+
+      <div class="info-section">
+        <h2 class="full-name">{{ fullName }}</h2>
+        <p><strong>Status:</strong> {{ profile.status }}</p>
+        <p>{{ profile.bio }}</p>
+        <p *ngIf="profile.url"><a [href]="profile.url" target="_blank">{{ profile.url }}</a></p>
+        <p><strong>Gender:</strong> {{ profile.gender }}</p>
+        <p><strong>City:</strong> {{ profile.city }}</p>
+
+        <!-- RELATIONSHIP INFO -->
+        <div class="relation-section">
+          <mat-card class="relation-card" *ngIf="isFollower || isFollowing">
+            <mat-icon color="primary">person</mat-icon>
+            <p *ngIf="isFollower">{{ fullName }} follows you</p>
+            <p *ngIf="!isFollower">{{ fullName }} doesn’t follow you</p>
+            <p *ngIf="isFollowing">You follow {{ fullName }}</p>
+            <p *ngIf="!isFollowing">You don’t follow {{ fullName }}</p>
+          </mat-card>
+
+          <mat-card class="relation-card warn" *ngIf="isBlocked || isBlocking">
+            <mat-icon color="warn">block</mat-icon>
+            <p *ngIf="isBlocked">You have blocked {{ fullName }}</p>
+            <p *ngIf="isBlocking">{{ fullName }} has blocked you</p>
+            <p *ngIf="!isBlocked && !isBlocking">No blocking between you</p>
+          </mat-card>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- FRIEND ACTIVITY -->
+  <div class="activities" *ngIf="storyFeed.length || reelFeed.length">
+    <h3>Recent Activity by {{ fullName }}</h3>
+    <hr />
+    <div class="feed-item" *ngFor="let data of storyFeed">
+      <p>
+        {{ fullName }} <strong>{{ data.action }}</strong> story
+        <a class="feed-link" (click)="goToStoryDetail(data.story.id)">{{ data.story.title }}</a>
+      </p>
+    </div>
+    <div class="feed-item" *ngFor="let data of reelFeed">
+      <p>
+        {{ fullName }} <strong>{{ data.action }}</strong> reel
+        <a class="feed-link" (click)="goToReelDetail(data.reel.id)">{{ data.reel.caption }}</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- CHATROOM SECTION -->
+  <div class="chatroom-section" *ngIf="chatrooms.length">
+    <h3>Chatrooms started by you</h3>
+    <mat-card class="chatroom-card" *ngFor="let chatroom of chatrooms">
+      <h4>Chatroom #{{ chatroom.chatroom_id }}</h4>
+      <p *ngIf="chatroom.chatroom_type === 'story'">
+        Story:
+        <a class="feed-link" (click)="goToStoryDetail(chatroom.chatroom_object_id)">
+          {{ chatroom.chatroom_object_title | titlecase }}
+        </a>
+      </p>
+      <p *ngIf="chatroom.chatroom_type === 'reel'">
+        Reel:
+        <a class="feed-link" (click)="goToReelDetail(chatroom.chatroom_object_id)">
+          {{ chatroom.chatroom_object_title | titlecase }}
+        </a>
+      </p>
+    </mat-card>
+  </div>
+
+  <!-- REMOVE FRIEND BUTTON -->
+  <div class="action-row" *ngIf="!showConfirm">
+    <button mat-flat-button color="warn" (click)="showConfirm = true">
+      <mat-icon>person_remove</mat-icon> Remove Friend
+    </button>
+  </div>
+
+  <!-- CONFIRMATION DIALOG -->
+  <div class="confirm-block" *ngIf="showConfirm">
+    <h2>Remove Friendship from {{ fullName }}</h2>
+    <p>This action is <strong>permanent</strong>. Are you sure?</p>
+
+    <div class="confirm-buttons">
+      <button mat-stroked-button color="primary" (click)="showConfirm = false">
+        Cancel
+      </button>
+      <button mat-flat-button color="warn" (click)="confirmRemoveFriend()">
+        OK, Remove Friendship
+      </button>
+    </div>
+  </div>
 </div>

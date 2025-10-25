@@ -65,6 +65,9 @@ export class StoryDetailComponent implements OnInit{
   }
 
   showReels() {
+    if (this.dialog.openDialogs.length > 0) {
+      this.dialog.closeAll();
+    }
     const dialogConfig = new MatDialogConfig();
     dialogConfig.panelClass = ['watch-reel-dialog', 'center-dialog'];
     dialogConfig.hasBackdrop = true;
@@ -81,6 +84,9 @@ export class StoryDetailComponent implements OnInit{
   }
 
   addComment() {
+    if (this.dialog.openDialogs.length > 0) {
+      this.dialog.closeAll();
+    }
     const dialogConfig = new MatDialogConfig();
     dialogConfig.panelClass = ['comment-dialog', 'center-dialog'];
     dialogConfig.hasBackdrop = false;
@@ -133,6 +139,9 @@ export class StoryDetailComponent implements OnInit{
     });
   }
   showReactionInfo() {
+    if (this.dialog.openDialogs.length > 0) {
+      this.dialog.closeAll();
+    }
     const dialogConfig = new MatDialogConfig();
     dialogConfig.panelClass = ['reaction-dialog', 'center-dialog'];
     dialogConfig.hasBackdrop = false;

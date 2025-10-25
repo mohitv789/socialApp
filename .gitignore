@@ -1,0 +1,153 @@
+# ==============================
+# Global OS + Editor junk
+# ==============================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Icon?
+*.swp
+*.swo
+*.tmp
+*.log
+*.bak
+*.orig
+*.rej
+*.kate-swp
+*.sublime-workspace
+*.vscode/
+.idea/
+
+# ==============================
+# Node / Angular Frontend
+# ==============================
+frontend-app/node_modules/
+frontend-app/dist/
+frontend-app/.angular/cache/
+frontend-app/.angular/
+frontend-app/.env
+frontend-app/npm-debug.log*
+frontend-app/package-lock.json
+frontend-app/yarn-error.log
+
+# ==============================
+# Python / Django Backend
+# ==============================
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.py[cod]
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+*.sqlite
+*.log
+
+# Django local files
+backend/media/
+backend/staticfiles/
+backend/static/
+backend/.env
+.env
+*.env
+.env.*
+
+# Django migrations (optional if auto-generated)
+# Comment this out if you want migrations versioned
+backend/**/migrations/*.py
+!backend/**/migrations/__init__.py
+
+# ==============================
+# Python environment / venv
+# ==============================
+venv/
+env/
+ENV/
+backend/venv/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+
+# ==============================
+# Docker / Compose / Build Artifacts
+# ==============================
+**/__pycache__/
+**/.pytest_cache/
+*.pid
+*.seed
+*.pid.lock
+docker-compose.override.yml
+docker-compose.local.yml
+docker-compose.dev.yml
+*.tar
+*.zip
+*.gz
+
+# Docker volumes / runtime mounts
+volumes/
+data/
+static-ea-data/
+db-ea-data/
+*.sock
+
+# ==============================
+# Logs & temp files
+# ==============================
+*.log
+*.out
+*.err
+*.pid
+*.seed
+tmp/
+temp/
+.cache/
+celerybeat-schedule
+celerybeat.pid
+
+# ==============================
+# VSCode / JetBrains project files
+# ==============================
+.vscode/
+.idea/
+*.iml
+*.code-workspace
+
+# ==============================
+# Tests / Reports
+# ==============================
+coverage/
+.coverage
+*.cover
+htmlcov/
+.tox/
+pytest_cache/
+.pytest_cache/
+nosetests.xml
+coverage.xml
+*.coveragerc
+junit*.xml
+
+# ==============================
+# Nginx / Proxy Configs
+# ==============================
+proxy/*.log
+proxy/nginx.conf
+proxy/nginx.frontend.conf
+proxy/uwsgi_params
+proxy/http_proxy.params
+proxy/ws_proxy.params
+proxy/*.pid
+proxy/.DS_Store
+
+# ==============================
+# AWS / Keys / Secrets
+# ==============================
+*.pem
+*.ppk
+*.crt
+*.key
+*.csr
+secrets.json
+credentials.json
+aws_credentials
+config.json
+service-account.json

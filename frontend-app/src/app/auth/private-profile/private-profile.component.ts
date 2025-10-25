@@ -87,6 +87,9 @@ export class PrivateProfileComponent implements OnInit{
   }
 
   addProfile() {
+    if (this.dialog.openDialogs.length > 0) {
+      this.dialog.closeAll();
+    }
     const dialogConfig = new MatDialogConfig();
     dialogConfig.panelClass = ['creation-dialog', 'center-dialog'];
     dialogConfig.hasBackdrop = false;
