@@ -2,7 +2,11 @@
 FROM node:18-alpine AS build
 WORKDIR /app
 COPY package*.json ./
-RUN npm ci
+RUN npm ci --loglevel verbose
+# or inspect the log file mentioned in the error inside the failed container image build output:
+# in the host you can re-run the build and then inspect the log path reported in the error, e.g.:
+# /root/.npm/_logs/<timestamp>-debug-0.log
+
 COPY . .
 
 # ---------- Stage 2: Serve with nginx ----------
