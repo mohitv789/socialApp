@@ -2,7 +2,12 @@
 <div class="story-grid">
   <div class="story-card">
 
-    <img [src]="getImageUrl(story.image)" class="story-img" alt="story image" />
+    <!-- <img [src]="getImageUrl(story.image)" class="story-img" alt="story image" /> -->
+    <app-fast-thumbnail
+      [images]="getAllImagesForStoryAndReel({ limit: 10, useThumb: true })"
+      [fps]="3"
+      (clicked)="goToFeedReelList()">
+    </app-fast-thumbnail>
     <div class="story-body">
       <h4>{{ story.title }}</h4>
       <p>{{ story.description }}</p>

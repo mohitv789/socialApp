@@ -48,7 +48,17 @@ services:
       - backend_ea
       - db_ea
 
-
+  frontend:
+    build:
+      context: ./frontend-app
+      dockerfile: Dockerfile
+    image: my-frontend:latest
+    ports:
+      - "4200:81"  # map nginx:81 to host:4200
+    restart: unless-stopped
+    depends_on:
+      - backend_ea
+      - db_ea
 
 
 
@@ -57,12 +67,18 @@ services:
       context: ./proxy
     container_name: proxy_ea
     restart: always
+
+    environment:
+      - APP_UPSTREAM=backend_ea:8000     # matches backend internal port
+      - WS_UPSTREAM=websockets:8080   # matches websockets internal port
+
     depends_on:
       - backend_ea
       - websockets
     ports:
-      - 80:8000
+      - 80:80
     volumes:
+      - ./frontend-app/dist/frontend-app:/usr/share/nginx/html:ro
       - static-ea-data:/vol/static
   
 

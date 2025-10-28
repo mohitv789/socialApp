@@ -15,5 +15,23 @@ WORKDIR /usr/share/nginx/html
 RUN rm -rf ./*
 # replace 'frontend-app' with your actual dist folder name (see step 3)
 COPY --from=build /app/dist/frontend-app ./
-EXPOSE 80
+EXPOSE 81
 CMD ["nginx", "-g", "daemon off;"]
+
+
+# # Stage 1: build app
+# FROM node:18 AS builder
+# WORKDIR /usr/src/app
+# COPY package.json package-lock.json* ./
+# RUN npm ci --silent
+# COPY . .
+# # Use your production build command (Angular: ng build --prod, CRA: npm run build)
+# RUN npm run build
+
+# # Stage 2: nginx to serve content
+# FROM nginx:stable-alpine
+# # Remove default nginx content
+# RUN rm -rf /usr/share/nginx/html/*
+# COPY --from=builder /usr/src/app/dist/frontend-app /usr/share/nginx/html
+# EXPOSE 80
+# CMD ["nginx", "-g", "daemon off;"]

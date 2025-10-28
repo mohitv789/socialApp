@@ -56,6 +56,7 @@ import { ShapeMaskToolsComponent } from './image-editor/toolbar/shape-mask-tools
 import { SharedModule } from './shared.module';
 import { DragDropModule } from '@angular/cdk/drag-drop';
 import { AiToolsComponent } from './image-editor/toolbar/ai-tools/ai-tools.component';
+import { ThumbnailVideoComponent } from './story-pushed/pushed-item/thumbnail-video/thumbnail-video.component';
 
 @NgModule({
   declarations: [
@@ -96,7 +97,8 @@ import { AiToolsComponent } from './image-editor/toolbar/ai-tools/ai-tools.compo
     CropToolsComponent,
     TextToolsComponent,
     ShapeMaskToolsComponent,
-    AiToolsComponent
+    AiToolsComponent,
+    ThumbnailVideoComponent
   ],
   imports: [
     CommonModule,
@@ -121,7 +123,8 @@ import { AiToolsComponent } from './image-editor/toolbar/ai-tools/ai-tools.compo
     MatTooltipModule,
     MatSnackBarModule,
     MatMenuModule,
-    DragDropModule
+    DragDropModule,
+    
   ],
   exports: [
     MatStepperModule,
@@ -140,7 +143,8 @@ import { AiToolsComponent } from './image-editor/toolbar/ai-tools/ai-tools.compo
     ReelListComponent,
     StoryNewPartaComponent,
     StoryNewPartbComponent,
-    AiToolsComponent
+    AiToolsComponent,
+    ThumbnailVideoComponent
   ]
 })
 export class StoryModule { }

@@ -1,0 +1,21 @@
+<div class="fast-thumb-root" (click)="onClick()" role="button" tabindex="0"
+     (keydown.enter)="onClick()" (keydown.space)="onClick()">
+  <ng-container *ngIf="images && images.length > 0; else placeholder">
+    <img
+      (error)="onImgError($event)"
+      *ngFor="let img of images; let idx = index"
+      [src]="img"
+      [class.active]="idx === activeIndex"
+      [attr.aria-hidden]="idx === activeIndex ? 'false' : 'true'"
+      class="fast-thumb-img"
+      loading="lazy"
+      draggable="false"
+    />
+    <!-- optional frame / play indicator -->
+    <div class="fast-thumb-indicator" aria-hidden="true">{{activeIndex + 1}} / {{images.length}}</div>
+  </ng-container>
+
+  <ng-template #placeholder>
+    <div class="fast-thumb-placeholder">No image</div>
+  </ng-template>
+</div>

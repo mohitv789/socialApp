@@ -5,6 +5,8 @@ import { StoryHTTPService } from '../../services/stories.service';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { ReelDialogComponent } from '../../reel/reel-dialog/reel-dialog.component';
 import { Reel } from '../../models/Reel';
+import { ReelFileTransferService } from '../../services/reel-file-transfer.service';
+import { StoryFileTransferService } from '../../services/story-file-transfer.service';
 @Component({
   selector: 'app-pushed-item',
   templateUrl: './pushed-item.component.html',
@@ -33,7 +35,7 @@ export class PushedItemComponent implements OnChanges, OnDestroy , OnChanges{
   loveNumbers!: number| undefined;
   celebrateNumbers!: number| undefined;
   commentNumbers!: number| undefined;
-  constructor(private route: ActivatedRoute,private sService: StoryHTTPService,private router: Router,
+  constructor(private route: ActivatedRoute, private sService: StoryHTTPService, private router: Router,private rfileHttpService: ReelFileTransferService, private sfileHttpService: StoryFileTransferService, 
     private dialog: MatDialog) {}
 
 
@@ -127,6 +129,38 @@ export class PushedItemComponent implements OnChanges, OnDestroy , OnChanges{
     // remove any leading slashes and prefix backend base:
     const cleaned = src.replace(/^\/+/, '');
     return `${this.BACKEND_BASE}/${cleaned}`;
+  }
+
+  private maybeThumb(url: string, useThumb: boolean): string {
+    if (!useThumb || !url) return url;
+
+    // If backend already gave a distinct field like /static/media/.../thumbs/..., keep it.
+    // Otherwise we do not invent new paths blindly, we return the original URL.
+    // The thumbnail fallback will be handled by the image error handler in the component.
+    return url;
+  }
+
+  getAllImagesForStoryAndReel(options: { limit?: number; useThumb?: boolean } = {}): string[] {
+    const limit = options.limit ?? 12;
+    const useThumb = options.useThumb ?? true;
+    const arr: string[] = [];
+
+    if (!this.story) return [];
+
+    // story thumbnail or image
+    const sThumb = (this.story as any).thumbImage ?? this.story.image;
+    if (sThumb) arr.push(this.getImageUrl(sThumb));
+
+    // reels
+    if (Array.isArray(this.story.reels)) {
+      for (const r of this.story.reels) {
+        const rThumb = (r as any).thumbImage ?? r.image;
+        if (rThumb) arr.push(this.getImageUrl(rThumb));
+      }
+    }
+
+    const unique = Array.from(new Set(arr.filter(Boolean)));
+    return unique.slice(0, Math.max(1, limit));
   }
 
 }
