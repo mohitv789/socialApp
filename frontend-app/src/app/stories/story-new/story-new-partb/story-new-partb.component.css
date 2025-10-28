@@ -54,3 +54,141 @@ input[type="file"] {
   background-color: rgb(45, 112, 7);
   color: white !important;
 }
+/* position container for actions inside the right column */
+.reel-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  align-items: start;
+  flex-wrap: nowrap;
+  padding-top: 6px;              /* aligns with card content */
+  margin-left: auto;
+}
+
+/* base icon button style override / enhancements */
+.icon-btn {
+  --btn-size: 40px;
+  width: var(--btn-size);
+  height: var(--btn-size);
+  min-width: var(--btn-size);    /* material button keeps min width, override */
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(10, 25, 40, 0.06);
+  transition: transform .12s ease, box-shadow .12s ease, background-color .12s ease;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+/* icon sizing */
+.icon-btn mat-icon {
+  font-size: 18px; /* slightly larger than default for clarity */
+}
+
+/* edit button — green */
+.icon-btn--edit {
+  background: linear-gradient(180deg, #2c9a28 0%, #1f7f20 100%);
+  color: white;
+  border-color: rgba(0,0,0,0.06);
+}
+
+/* delete button — red */
+.icon-btn--delete {
+  background: linear-gradient(180deg, #ff6b6b 0%, #e84e4e 100%);
+  color: white;
+  border-color: rgba(0,0,0,0.06);
+}
+
+/* hover / focus (keyboard accessible) */
+.icon-btn:hover,
+.icon-btn:focus {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(10, 25, 40, 0.12);
+  outline: none;
+}
+
+/* visible focus ring for keyboard users */
+.icon-btn:focus-visible {
+  box-shadow: 0 0 0 3px rgba(30,144,255,0.18), 0 8px 20px rgba(10,25,40,0.12);
+  border-color: rgba(30,144,255,0.28);
+}
+
+/* active / pressed */
+.icon-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 10px rgba(10, 25, 40, 0.08);
+}
+
+/* tooltip fallback: browsers show title attribute already; but we add a CSS pseudo tooltip for non-touch devices */
+@media (hover: hover) and (pointer: fine) {
+  .icon-btn[title]:hover::after {
+    content: attr(title);
+    position: absolute;
+    transform: translateY(-8px);
+    padding: 6px 8px;
+    font-size: 12px;
+    border-radius: 6px;
+    background: rgba(14, 17, 23, 0.9);
+    color: white;
+    white-space: nowrap;
+    margin-top: -10px;
+    z-index: 30;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.2);
+    top: -8px;
+  }
+}
+
+/* Responsive: when screen is small stack buttons neatly */
+@media (max-width: 520px) {
+  .reel-actions {
+    gap: 8px;
+    justify-content: flex-start;
+    margin-top: 10px;
+  }
+  .icon-btn {
+    --btn-size: 36px;
+    border-radius: 8px;
+  }
+}
+
+/* ensure mat-icon-button built-in min-height doesn't break our sizes */
+button.mat-icon-button {
+  padding: 0 !important;
+  line-height: 1;
+}
+.icon-btn-add  {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgb(45, 112, 7) ;
+  color: #fff !important;
+  border: none;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.icon-btn-add:hover, .icon-btn-add:focus {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px rgba(0,0,0,0.12);
+}
+/* style for your add button (floating + consistent) */
+button.edit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, #2c9a28 0%, #1f7f20 100%);
+  color: #fff !important;
+  border: none;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.08);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+button.edit-btn:hover, button.edit-btn:focus {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px rgba(0,0,0,0.12);
+}

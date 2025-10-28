@@ -1,4 +1,4 @@
-<h3>Add Reels</h3>
+<h1 style="margin: 10px; text-align: center;">Add Reels</h1>
 
 <div [formGroup]="storyDetailForm" enctype="multipart/form-data">
 
@@ -19,7 +19,7 @@
                 <div class="col-md-8">
                   <img [src]="reelForm.get('image')!.value" class="img-responsive" style="max-width: 600px;">
                 </div>
-                <div class="col-md-4">
+                <!-- <div class="col-md-4">
                   <div class="row">
 
                     <div class="col-md-6">
@@ -30,7 +30,32 @@
                     </div>
                   </div>
 
+                </div> -->
+
+                <div class="col-md-4">
+                  <div class="reel-actions" role="group" aria-label="Reel actions">
+                    <!-- Edit button -->
+                    <button
+                      mat-icon-button
+                      class="icon-btn icon-btn--edit float-start"
+                      (click)="onEdit(i)"
+                      aria-label="Edit reel"
+                      title="Edit">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+
+                    <!-- Delete button -->
+                    <button
+                      mat-icon-button
+                      class="icon-btn icon-btn--delete float-end"
+                      (click)="deleteReel(i)"
+                      aria-label="Delete reel"
+                      title="Delete">
+                      <mat-icon>delete_forever</mat-icon>
+                    </button>
+                  </div>
                 </div>
+
               </div>
 
             </div>
@@ -38,9 +63,20 @@
         </ng-container>
 
     </ng-container>
+    <br>
 
-    <button class="edit-btn" (click)="addReel()">
-        <mat-icon >add</mat-icon>
-    </button>
+    <div class="row mb-3 mt-3">
+      <div class="reel-actions" role="group" aria-label="Reel actions">
+
+        <button
+          mat-icon-button
+          class="icon-btn-add float-center"
+          (click)="addReel()"
+          aria-label="Add more reels"
+          title="Add more reels">
+          <mat-icon>add</mat-icon>
+      </button>
+      </div>
+    </div>
 
 </div>
