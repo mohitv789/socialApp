@@ -1,23 +1,27 @@
-<div class="ai-content" *ngIf="!aiCollapsed">
-    <div class="ai-buttons">
-      <button mat-stroked-button (click)="applyAIFilter('remove_bg')">Remove BG</button>
-      <button mat-stroked-button (click)="applyAIFilter('enhance')">Enhance</button>
-      <button mat-stroked-button (click)="applyAIFilter('restore')">Restore</button>
-    </div>
-
-    <div class="ai-prompt">
-      <mat-form-field appearance="outline" style="width:100%">
-        <input matInput placeholder="Describe edit (e.g. 'sunset background, enhance face')" #aiPrompt />
-      </mat-form-field>
-      <button mat-flat-button color="primary" (click)="applyAIFilter('llm_parse', aiPrompt.value)">AI Magic</button>
-    </div>
-
-    <button mat-button (click)="undoAIEdit()" [disabled]="!undoStack || !undoStack.length">Undo AI</button>
+<!-- ai-tools.component.html -->
+<div class="ai-content" *ngIf="!aiCollapsed" (click)="$event.stopPropagation()">
+  <div class="ai-buttons" role="group" aria-label="AI quick actions">
+    <button mat-stroked-button (click)="applyAIFilter('remove_bg')" [disabled]="!imageAvailable">Remove BG</button>
+    <button mat-stroked-button (click)="applyAIFilter('enhance')" [disabled]="!imageAvailable">Enhance</button>
+    <button mat-stroked-button (click)="applyAIFilter('restore')" [disabled]="!imageAvailable">Restore</button>
   </div>
 
-  <!-- Collapsed chip -->
-  <div class="ai-collapsed-chip" *ngIf="aiCollapsed" (click)="toggleAIPanel($event)" role="button" tabindex="0">
-    <span class="drag-icon">☰</span>
-    <span class="collapsed-label">AI Tools</span>
-    <mat-icon class="chev">keyboard_arrow_up</mat-icon>
+  <div class="ai-prompt" style="margin-top:8px;">
+    <mat-form-field appearance="outline" style="width:100%">
+      <input matInput placeholder="Describe edit (e.g. 'sunset background, enhance face')" #aiPrompt aria-label="AI prompt" />
+    </mat-form-field>
+    <button mat-flat-button color="primary" (click)="applyAIFilter('llm_parse', aiPrompt.value)" [disabled]="!imageAvailable || !aiPrompt.value.trim()">AI Magic</button>
   </div>
+
+  <div style="margin-top:8px;">
+    <button mat-button (click)="undoAIEdit()" [disabled]="!undoStack.length || !imageAvailable">Undo AI</button>
+    <span *ngIf="!imageAvailable" class="hint" style="margin-left:12px; color: rgba(0,0,0,0.6)">Load an image to enable AI tools</span>
+  </div>
+</div>
+
+<!-- Collapsed chip -->
+<div class="ai-collapsed-chip" *ngIf="aiCollapsed" (click)="toggleAIPanel($event)" role="button" tabindex="0" (keydown.enter)="toggleAIPanel($event)" (keydown.space)="toggleAIPanel($event)">
+  <span class="drag-icon">☰</span>
+  <span class="collapsed-label">AI Tools</span>
+  <mat-icon class="chev">keyboard_arrow_up</mat-icon>
+</div>

@@ -6,6 +6,7 @@ import { ReelImageEditComponent } from '../reel-image-edit/reel-image-edit.compo
 import { ReelFileTransferService } from '../../services/reel-file-transfer.service';
 import { ReelsHTTPService } from '../../services/reels.service';
 import { ImageEditorComponent } from '../../image-editor/image-editor.component';
+import { Overlay } from '@angular/cdk/overlay';
 
 @Component({
   selector: 'app-story-new-partb',
@@ -17,7 +18,7 @@ export class StoryNewPartbComponent implements OnInit{
     reels: this.fb.array([])
   });
 
-constructor(private fb:FormBuilder,
+constructor(private fb:FormBuilder, private overlay:Overlay,
   private dialog: MatDialog,private fileTransferService: ReelFileTransferService,private rService: ReelsHTTPService) {
 
 }
@@ -38,6 +39,8 @@ addReel() {
   dialogConfig.panelClass = ['creation-dialog', 'center-dialog'];
   dialogConfig.hasBackdrop = false;
   dialogConfig.disableClose = true;
+    
+  dialogConfig.scrollStrategy = this.overlay.scrollStrategies.reposition();
 
   this.dialog.open(StoryNewReelComponent, dialogConfig)
     .afterClosed()
@@ -110,6 +113,8 @@ addReel() {
     dialogConfig.panelClass = ['creation-dialog', 'center-dialog'];
     dialogConfig.hasBackdrop = false;
     dialogConfig.disableClose = true;
+    
+    dialogConfig.scrollStrategy = this.overlay.scrollStrategies.reposition();
 
     // Normalize URL (if it's relative, prefix; if it's absolute, leave as is)
     const imageUrl = reel.image.startsWith('http') 

@@ -97,7 +97,7 @@
   </div>
 
   <hr class="heading">
-  <div class="row photo-carousal">
+  <div class="row chatrooms-section" *ngIf="!!profileAvailable">
     <div class="col-md-6" *ngIf="!!chatrooms">
       <h2 style="text-align: center;">Chatrooms started by you</h2>
       <div class="feed-item" style="text-align: center;" *ngFor="let chatroom of chatrooms">

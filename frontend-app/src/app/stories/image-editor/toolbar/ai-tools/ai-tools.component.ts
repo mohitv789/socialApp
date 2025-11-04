@@ -1,5 +1,11 @@
-import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, Optional } from '@angular/core';
 import { UtilService } from '../../util.service';
+
+export interface AiResponse {
+  edited_url?: string;
+  url?: string;
+  // other metadata...
+}
 
 @Component({
   selector: 'app-ai-tools',
@@ -7,27 +13,82 @@ import { UtilService } from '../../util.service';
   styleUrls: ['./ai-tools.component.css']
 })
 export class AiToolsComponent implements OnInit {
-
-
   aiCollapsed = true;
-    /** Outputs to parent component for AI actions and other notifications */
+
+  /** Indicates whether there's an image loaded that AI can operate on */
+  @Input() imageAvailable = false;
+  /** Optional: current image URL */
+  @Input() imageUrl?: string;
+
+  /** Outputs to parent component for AI actions and other notifications */
   @Output() aiAction = new EventEmitter<{ action: string, prompt?: string }>();
   @Output() aiUndo = new EventEmitter<void>();
   @Input() undoStack: any[] = [];
   @Output() closeSignal = new EventEmitter<any>(); // used when child wants to notify parent
-  ngOnInit(): void {
-    // Initialization logic here
-  }
 
   constructor(private utilService: UtilService) { }
 
+  ngOnInit(): void { }
+
   applyAIFilter(action: string, prompt?: string) {
     const p = typeof prompt === 'string' ? prompt.trim() : undefined;
+    // Emit to parent so parent app-level logic can listen
     this.aiAction.emit({ action, prompt: p });
+
+    // Also try to process locally if aiService is available
+    this.onAiAction({ action, prompt: p });
   }
 
   undoAIEdit() {
     this.aiUndo.emit();
+    this.onAiUndo();
+  }
+
+  // ------------------------- internal handlers -------------------------
+
+  onAiAction(event: { action: string; prompt?: string }) {
+    const { action, prompt } = event;
+    if (!this.imageAvailable && !['llm_parse'].includes(action)) {
+      this.utilService.openSnackBar('No image loaded for AI action', 1800);
+      return;
+    }
+
+    this.utilService.openSnackBar('AI processing started...', 1200);
+
+    if (this.utilService && typeof this.utilService.process === 'function') {
+      // aiService.process(action, prompt, imageUrl) should return an Observable/Promise
+      this.utilService.process(action, prompt, this.imageUrl).subscribe({
+        next: (resp: any) => {
+          const url = resp?.edited_url || resp?.url;
+          if (url) {
+            // Use UtilService to add/replace image on canvas
+            this.utilService.addImageToCanvas(url);
+            // Push previous state to undoStack if you keep states here
+            this.utilService.openSnackBar('AI edit applied', 1400);
+          } else {
+            this.utilService.openSnackBar('AI returned no image', 2500);
+            console.warn('aiService response had no url', resp);
+          }
+        },
+        error: (err: any) => {
+          console.error('AI error', err);
+          this.utilService.openSnackBar('AI edit failed', 3000);
+        }
+      });
+    } else {
+      // No aiService, fallback: notify user and let parent handle (aiAction emitted above)
+      this.utilService.openSnackBar(`AI action queued: ${action}${prompt ? ' — ' + prompt : ''}`, 1600);
+    }
+  }
+
+  onAiUndo() {
+    this.utilService.openSnackBar('Undo AI (attempting)', 1200);
+    // If utilService keeps canvas states, call:
+    if (typeof (this.utilService as any).canvasCommand === 'function') {
+      (this.utilService as any).canvasCommand('UNDO_AI', null);
+    } else {
+      this.utilService.openSnackBar('Undo not available in this build', 1800);
+    }
   }
 
   // ------------------------- UI helpers -------------------------
@@ -38,57 +99,9 @@ export class AiToolsComponent implements OnInit {
   }
 
   /**
-   * Template sometimes expects getNotification callback from child components
-   * (e.g. <app-main-tool (closeSignal)="getNotification($event)">). Implement it
-   * here and forward upward to the parent via closeSignal Output.
+   * Forward notification from child tools to parent.
    */
   getNotification(evt: any) {
-    // simply re-emit to parent so parent (ImageEditorComponent) can handle it
     this.closeSignal.emit(evt);
   }
-
-  onAiAction(event: { action: string; prompt?: string }) {
-    // Minimal safe handler: show a snackbar and forward to ai service if available.
-    const { action, prompt } = event;
-    console.log('AI Action requested:', action, prompt);
-
-    // If you have an AIImageService that returns edited URL, call it and update canvas:
-    if ((this as any).aiService && typeof (this as any).aiService.process === 'function') {
-      // Example: aiService.process(action, prompt, imageBlob) -> returns { edited_url }
-      // Use utilService.uploadedImageURL or editedImageURL as source image
-      const sourceUrl = this.utilService.uploadedImageURL || this.utilService.editedImageURL;
-      this.utilService.openSnackBar('AI processing started...', 2000);
-      // you need to implement process(action, prompt, imageUrl) on your AI service
-      (this as any).aiService.process(action, prompt, sourceUrl).subscribe({
-        next: (resp: any) => {
-          const url = resp?.edited_url || resp?.url;
-          if (url) {
-            // replace current canvas image by publishing addImageToCanvas
-            this.utilService.addImageToCanvas(url);
-            this.utilService.openSnackBar('AI edit applied', 1500);
-          } else {
-            this.utilService.openSnackBar('AI returned no image', 3000);
-          }
-        },
-        error: (err: any) => {
-          console.error('AI error', err);
-          this.utilService.openSnackBar('AI edit failed', 3000);
-        }
-      });
-    } else {
-      // fallback action: just log and show toast
-      this.utilService.openSnackBar(`AI action: ${action} ${prompt ? '- ' + prompt : ''}`, 1600);
-    }
-  }
-
-  onAiUndo() {
-    // If you keep an undo stack in a service, trigger it:
-    // For now just notify user — implement actual undo logic in canvas or by storing previous dataURLs.
-    this.utilService.openSnackBar('Undo AI (not yet implemented)', 1200);
-    // If CanvasComponent or service supports undoAIEdit(), call it:
-    if ((this as any).utilService && typeof (this as any).utilService.canvasCommand === 'function') {
-      (this as any).utilService.canvasCommand('UNDO_AI', null);
-    }
-  }
-
 }

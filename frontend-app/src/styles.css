@@ -46,6 +46,7 @@ html, body {
   overflow: auto !important;
   transition: opacity 0.2s ease;
   padding: 0 !important;
+  max-height: 1000px;
 }
 
 /* ============================================
@@ -180,3 +181,56 @@ html, body {
   background: rgba(255,0,0,0.3);
 }
 
+/* ==========================
+   Dialog zoom / scale rules
+   ========================== */
+
+/* default: no scale (1) */
+.cdk-overlay-pane.full-editor-dialog {
+  --dialog-scale: 1;
+}
+
+/* When adjustDialogScale sets a scale < 1 it will add 'zoomed-dialog' class */
+.cdk-overlay-pane.full-editor-dialog.zoomed-dialog .mat-dialog-container,
+.cdk-overlay-pane.full-editor-dialog.zoomed-dialog .mat-mdc-dialog-container {
+  /* Apply the scale using the CSS var */
+  transform: scale(var(--dialog-scale));
+  transition: transform 160ms ease;
+  /* ensure scaled content doesn't create overflow clipping inside the pane */
+  transform-origin: top center;
+  will-change: transform;
+  /* Prevent scrollbars from shifting layout too much */
+  backface-visibility: hidden;
+}
+
+/* Make sure the overlay pane keeps enough visible area so the scaled dialog appears centered */
+.cdk-overlay-pane.full-editor-dialog {
+  display: flex !important;
+  align-items: flex-start !important; /* align top so transform-origin: top center works well */
+  justify-content: center !important;
+  padding-top: 12px; /* small top gap for close button */
+  overflow: visible !important;
+  max-width: 1200px;
+}
+
+/* When scaled, allow internal scroll on the dialog content */
+.cdk-overlay-pane.full-editor-dialog.zoomed-dialog .mat-dialog-container .work-panel,
+.cdk-overlay-pane.full-editor-dialog.zoomed-dialog .mat-mdc-dialog-container .work-panel {
+  overflow: auto;
+}
+
+/* ensure toolbar remains clickable and above other elements */
+.cdk-overlay-pane.full-editor-dialog .toolbar-container,
+.cdk-overlay-pane.full-editor-dialog .toolbar-wrapper {
+  z-index: 2000; /* larger than typical content */
+}
+
+/* Optional: slightly reduce shadow when scaled to look better */
+.cdk-overlay-pane.full-editor-dialog.zoomed-dialog {
+  box-shadow: 0 6px 22px rgba(0,0,0,0.35);
+}
+
+/* Accessibility: ensure transforms don't break focus outlines */
+.cdk-overlay-pane.full-editor-dialog.zoomed-dialog *:focus {
+  outline-offset: 4px;
+}

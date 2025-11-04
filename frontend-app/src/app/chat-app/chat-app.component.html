@@ -1,0 +1,103 @@
+<div class="row chatrooms-section">
+  <!-- Left column: Chatrooms started by user -->
+  <div class="col-md-6" *ngIf="!!chatrooms">
+    <h2 class="text-center mb-4">Chatrooms started by you</h2>
+    <div class="card-deck">
+      <div
+        class="card mb-3 shadow-sm"
+        *ngFor="let chatroom of chatrooms"
+        style="border-radius: 12px;"
+      >
+        <div class="card-body text-center">
+          <h5 class="card-title">Chatroom {{ chatroom.chatroom_id }}</h5>
+
+          <p
+            class="card-text"
+            *ngIf="chatroom.chatroom_type == 'story'"
+          >
+            Chatroom on story
+            <a
+              class="text-secondary"
+              style="cursor: pointer;"
+              (click)="gotoStoryFeed(chatroom.chatroom_object_id)"
+            >
+              {{ chatroom.chatroom_object_title | titlecase }}
+            </a>
+          </p>
+
+          <p
+            class="card-text"
+            *ngIf="chatroom.chatroom_type == 'reel'"
+          >
+            Chatroom on reel
+            <a
+              class="text-secondary"
+              style="cursor: pointer;"
+              (click)="gotoReelFeed(chatroom.chatroom_object_id)"
+            >
+              {{ chatroom.chatroom_object_title | titlecase }}
+            </a>
+          </p>
+
+          <button
+            class="btn btn-primary btn-sm mt-2"
+            (click)="goToChatroom(chatroom)"
+          >
+            View Chatroom
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right column: Chatrooms on user's stories/reels -->
+  <div class="col-md-6" *ngIf="!!related_chatrooms">
+    <h2 class="text-center mb-4">Chatrooms on your stories and reels</h2>
+    <div class="card-deck">
+      <div
+        class="card mb-3 shadow-sm"
+        *ngFor="let chatroom of related_chatrooms"
+        style="border-radius: 12px;"
+      >
+        <div class="card-body text-center">
+          <h5 class="card-title">Chatroom {{ chatroom.chatroom_id }}</h5>
+
+          <p
+            class="card-text"
+            *ngIf="chatroom.chatroom_type == 'story'"
+          >
+            Chatroom on story
+            <a
+              class="text-secondary"
+              style="cursor: pointer;"
+              (click)="gotoStoryDetail(chatroom.chatroom_object_id)"
+            >
+              {{ chatroom.chatroom_object_title | titlecase }}
+            </a>
+          </p>
+
+          <p
+            class="card-text"
+            *ngIf="chatroom.chatroom_type == 'reel'"
+          >
+            Chatroom on reel
+            <a
+              class="text-secondary"
+              style="cursor: pointer;"
+              (click)="gotoReelDetail(chatroom.chatroom_object_id, chatroom.chatroom_object_parent)"
+            >
+              {{ chatroom.chatroom_object_title | titlecase }}
+            </a>
+          </p>
+
+          <button
+            class="btn btn-primary btn-sm mt-2"
+            (click)="goToChatroom(chatroom)"
+          >
+            View Chatroom
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -38,6 +38,18 @@
 
       <!-- RIGHT: Authenticated nav -->
       <nav class="nav-right" *ngIf="authenticated; else anonNav" aria-label="Main navigation">
+
+        <div class="dropdown" tabindex="0" (keydown.enter)="openDropdown($event)" (keydown.space)="openDropdown($event)">
+          <button class="dropbtn" aria-haspopup="true" aria-expanded="false">
+            Chatting <span class="caret">▾</span>
+          </button>
+          <div class="dropdown-content" role="menu">
+            <a routerLink="/chats/all" role="menuitem">All Chatrooms</a>
+            <!-- <a routerLink="/chats/mine" role="menuitem">Your Chatrooms</a> -->
+          </div>
+        </div>
+
+
         <!-- Stories dropdown -->
         <div class="dropdown" tabindex="0" (keydown.enter)="openDropdown($event)" (keydown.space)="openDropdown($event)">
           <button class="dropbtn" aria-haspopup="true" aria-expanded="false">

@@ -247,7 +247,7 @@ class StoryReactionActivityFeed(TimeStampedModel):
     currentUser = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,related_name='story_current_user')
     doneByUser = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,related_name='story_action_user')
     story = models.ForeignKey(Story,on_delete=models.CASCADE)
-    action = models.CharField(max_length=3, choices=ACTION_CHOICES)
+    action = models.CharField(max_length=4, choices=ACTION_CHOICES)
 
     @property
     def fullname(self):

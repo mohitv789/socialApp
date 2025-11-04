@@ -35,8 +35,6 @@ export class ImageEditorComponent implements OnInit{
     this.authService.user().subscribe((result: any) => {
       this.user_id = result["id"];
     })
-
-    console.log(this.data);
     this.utilService.uploadedImageURL = this.data.image;
     this.utilService.uploadedId = this.data.id;
     this.utilService.originalCaption = this.data.caption;

@@ -3,6 +3,11 @@
   overflow-x: hidden !important;
   overflow-y: hidden !important;
   text-align: center;
+  position: relative; 
+  padding: 16px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12);
 }
 
 
@@ -24,4 +29,19 @@
 
   overflow-x: hidden !important;
   overflow-y: hidden !important;
+}
+.close-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  color: #444;
+  background: rgb(160, 30, 30);
+  border-radius: 50%;
+  transition: background-color 0.2s ease, transform 0.15s ease;
+  z-index: 2;
+}
+
+.close-button:hover {
+  background-color: #e0e0e0;
+  transform: scale(1.1);
 }

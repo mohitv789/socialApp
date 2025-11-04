@@ -49,6 +49,7 @@ import { MatCardModule } from '@angular/material/card';
 import { IonicModule } from '@ionic/angular';
 import { FeedService } from './feed-app/feed.service';
 import { FeedAppComponent } from './feed-app/feed-app.component';
+import { ChatAppComponent } from './chat-app/chat-app.component';
 
 @NgModule({
   declarations: [
@@ -72,7 +73,8 @@ import { FeedAppComponent } from './feed-app/feed-app.component';
     ChatroomDialogComponent,
     ChatHistoryComponent,
     ChatFormComponent,
-    FeedAppComponent
+    FeedAppComponent,
+    ChatAppComponent
   ],
   imports: [
     BrowserModule,

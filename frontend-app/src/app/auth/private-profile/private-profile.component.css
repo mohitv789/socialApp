@@ -94,3 +94,9 @@
   margin: 10px auto !important;
   justify-content:center;
 }
+.chatrooms-section {
+  max-width: 800px;
+  padding: 10px auto !important;
+  margin: 10px auto !important;
+  justify-content:center;
+}

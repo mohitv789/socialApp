@@ -1,5 +1,7 @@
+<!-- reel-dialog.component.html (modified) -->
 <div class="reel-dialog-root" tabindex="0">
-  <button class="close-overlay" (click)="onClose()" aria-label="Close">
+  <!-- close button is focusable and has a template ref for fallback -->
+  <button #closeBtn class="close-overlay" (click)="onClose()" aria-label="Close" tabindex="0">
     <mat-icon>close</mat-icon>
   </button>
 
@@ -17,12 +19,14 @@
       [attr.aria-label]="(image.caption || ('Slide ' + (i+1))) + ' of ' + reelimages.length"
     >
       <img
+        #slideImg
         class="slide-img"
         [src]="image?.image || ''"
         [alt]="image?.caption || 'Reel image ' + (i + 1)"
         (load)="onImageLoad(i)"
         draggable="false"
-        />
+        tabindex="0"
+      />
     </div>
 
     <!-- Controls -->

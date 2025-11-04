@@ -165,6 +165,7 @@ import { WebchatComponent } from './webchat/webchat.component';
 
 // NEW: combined feed component
 import { FeedAppComponent } from './feed-app/feed-app.component';
+import { ChatAppComponent } from './chat-app/chat-app.component';
 
 const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -177,6 +178,18 @@ const routes: Routes = [
     path: 'combined-feed',
     component: FeedAppComponent,
     canActivate: [AuthGuard]
+  },
+
+  {
+    path: 'chats',
+    component: ChatAppComponent,
+    canActivate: [AuthGuard],
+    children: [
+      {
+        path: 'all',
+        component: ChatAppComponent
+      }
+    ]
   },
 
   {

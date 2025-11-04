@@ -1,6 +1,6 @@
 .editor-container {
   height: 100vh;
-  width: auto;
+  max-height: 1000px;
 }
 
 .menubar-container {
@@ -22,27 +22,52 @@
   display: flex;
   flex-direction: row;
   align-items: stretch;
+  justify-content: space-between;
+  width: 100%;
+  height: calc(100vh - 50px); /* adjust based on header */
+  max-height: 1200px;
+  overflow: visible;
+  /* display: flex;
+  flex-direction: row;
+  align-items: stretch;
   justify-content: center;
   height: 100%;
-  width: 100%;
+  width: 100%; */
 }
+
+
 
 .canvas-container {
   background: #ffffff;
   justify-content: center;
+  max-width: 1000px;
+  max-height: 1000px;
   align-items: center;
-  padding: 0;
-  z-index: 1;
+  padding: 10px;
+  z-index: 100;
   border: #303030 2px solid;
+  overflow: hidden;
+  position: relative;
+  background: transparent;
 }
 
 .toolbar-container {
-  width: 100%;             /* adjustable: width of the sidebar toolbar */
-  height: 100%;             /* full height of the editor */
-  position: relative;
-  z-index: 999;
-  pointer-events: auto;
-  background: #202020;      /* matches dark theme */
-  border-left: 1px solid rgba(255,255,255,0.05);
+  width: 320px; /* give a fixed width for AI tools */
+  flex-shrink: 0;
+  background: #111;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 320px;
+  height: 100%;
+  background: #111;
+  box-shadow: -2px 0 8px rgba(0,0,0,0.4);
+  overflow-y: auto;
+  z-index: 100;
 }
 

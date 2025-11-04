@@ -9,6 +9,7 @@ import { ReelsHTTPService } from '../../services/reels.service';
 import { ReelEditComponent } from '../reel-edit/reel-edit.component';
 import { ImageEditorComponent } from '../../image-editor/image-editor.component';
 import { UtilService } from '../../image-editor/util.service';
+import { Overlay } from '@angular/cdk/overlay';
 
   @Component({
     selector: 'app-story-edit-partb',
@@ -18,7 +19,7 @@ import { UtilService } from '../../image-editor/util.service';
   export class StoryEditPartbComponent implements OnInit {
     storyDetailForm!: FormGroup;
     @ViewChild(MatStepper) stepper!: MatStepper;
-    constructor(private fb:FormBuilder, private rService: ReelsHTTPService,
+    constructor(private fb:FormBuilder, private rService: ReelsHTTPService, private overlay:Overlay,
       private dialog: MatDialog,private rfileTransferService: ReelFileTransferService,private utilService: UtilService) {
         this.storyDetailForm = this.fb.group({
           reels: this.fb.array([])
@@ -56,6 +57,8 @@ import { UtilService } from '../../image-editor/util.service';
       dialogConfig.panelClass = ['creation-dialog', 'center-dialog'];
       dialogConfig.hasBackdrop = false;
       dialogConfig.disableClose = true;
+    
+      dialogConfig.scrollStrategy = this.overlay.scrollStrategies.reposition();
 
       // Add both overlay-level and component-level classes
       dialogConfig.panelClass = ['other-dialog-panel', 'story-new-reel-panel'];
@@ -128,6 +131,8 @@ import { UtilService } from '../../image-editor/util.service';
     dialogConfig.hasBackdrop = false;
     dialogConfig.disableClose = true;
 
+    
+    dialogConfig.scrollStrategy = this.overlay.scrollStrategies.reposition();
     // base url - prefer using environment variable if available
     const baseUrl = (window as any).ENV?.BACKEND_URL || 'http://localhost:4500';
 

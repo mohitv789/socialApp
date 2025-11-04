@@ -13,6 +13,7 @@ import { StoryHTTPService } from 'src/app/stories/services/stories.service';
 import { ReelsHTTPService } from 'src/app/stories/services/reels.service';
 import { Story } from 'src/app/stories/models/Story';
 import { Reel } from 'src/app/stories/models/Reel';
+import { Overlay } from '@angular/cdk/overlay';
 
 @Component({
   selector: 'app-private-profile',
@@ -40,7 +41,7 @@ export class PrivateProfileComponent implements OnInit{
   r_activity:any = []
   chatrooms: any[] = []
   related_chatrooms: any[] = []
-  constructor(private pService: ProfileHTTPService,private dialog: MatDialog,private authService: AuthService,
+  constructor( private overlay: Overlay, private pService: ProfileHTTPService,private dialog: MatDialog,private authService: AuthService,
     private router: Router,private pFileTransferService: ProfileFileTransferService,
     private chatService: ChatroomHTTPService,private sService: StoryHTTPService, private rService: ReelsHTTPService) {}
 
@@ -94,6 +95,8 @@ export class PrivateProfileComponent implements OnInit{
     dialogConfig.panelClass = ['creation-dialog', 'center-dialog'];
     dialogConfig.hasBackdrop = false;
     dialogConfig.disableClose = true;
+    
+    dialogConfig.scrollStrategy = this.overlay.scrollStrategies.reposition();
     this.dialog.open(PrivateProfileCreateComponent, dialogConfig)
       .afterClosed()
       .subscribe((val:any) => {
@@ -407,28 +410,28 @@ export class PrivateProfileComponent implements OnInit{
 
       console.log(data);
       
-      if (!!data) {
-        data.forEach((item: any)=>{
-          console.log(item);
+      // if (!!data) {
+      //   data.forEach((item: any)=>{
+      //     console.log(item);
           
-          // let conversations = reel_item.reel_conversation;
-          // if (conversations.length > 0) {
-          //   conversations.forEach((conversation: any) => {
-          //     let pushed_obj:any = {};
-          //     this.sService.fetchStoryfromReel(reel_item.id).subscribe((res:any)=>{
-          //       pushed_obj["chatroom_object_parent"] = res["reels_story"];
-          //     })
-          //     pushed_obj["chatroom_id"] = conversation["chatroom_id"];
-          //     pushed_obj["chatroom_object_id"] = reel_item.id;
-          //     pushed_obj["chatroom_object_title"] = reel_item.caption;
-          //     pushed_obj["chatroom_type"] = "reel";
-          //     pushed_obj["chatroom_owner"] = conversation["chatroom_owner_id"];
-          //     this.related_chatrooms.push(pushed_obj);
-          //   })
+      //     let conversations = item.reel_conversation;
+      //     if (conversations.length > 0) {
+      //       conversations.forEach((conversation: any) => {
+      //         let pushed_obj:any = {};
+      //         this.sService.fetchStoryfromReel(item.id).subscribe((res:any)=>{
+      //           pushed_obj["chatroom_object_parent"] = res["reels_story"];
+      //         })
+      //         pushed_obj["chatroom_id"] = conversation["chatroom_id"];
+      //         pushed_obj["chatroom_object_id"] = item.id;
+      //         pushed_obj["chatroom_object_title"] = item.caption;
+      //         pushed_obj["chatroom_type"] = "reel";
+      //         pushed_obj["chatroom_owner"] = conversation["chatroom_owner_id"];
+      //         this.related_chatrooms.push(pushed_obj);
+      //       })
 
-          // }
-        })
-      }
+      //     }
+      //   })
+      // }
     })
   }
 }

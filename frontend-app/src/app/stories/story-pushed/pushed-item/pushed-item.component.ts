@@ -7,6 +7,7 @@ import { ReelDialogComponent } from '../../reel/reel-dialog/reel-dialog.componen
 import { Reel } from '../../models/Reel';
 import { ReelFileTransferService } from '../../services/reel-file-transfer.service';
 import { StoryFileTransferService } from '../../services/story-file-transfer.service';
+import { Overlay } from '@angular/cdk/overlay';
 @Component({
   selector: 'app-pushed-item',
   templateUrl: './pushed-item.component.html',
@@ -36,7 +37,7 @@ export class PushedItemComponent implements OnChanges, OnDestroy , OnChanges{
   celebrateNumbers!: number| undefined;
   commentNumbers!: number| undefined;
   constructor(private route: ActivatedRoute, private sService: StoryHTTPService, private router: Router,private rfileHttpService: ReelFileTransferService, private sfileHttpService: StoryFileTransferService, 
-    private dialog: MatDialog) {}
+    private dialog: MatDialog, private overlay:Overlay) {}
 
 
   
@@ -81,7 +82,9 @@ export class PushedItemComponent implements OnChanges, OnDestroy , OnChanges{
     dialogConfig.panelClass = ['feed-reel-dialog', 'center-dialog'];
     dialogConfig.hasBackdrop = true;
     dialogConfig.disableClose = true;
-    dialogConfig.backdropClass = 'feed-reel-backdrop';  
+    dialogConfig.backdropClass = 'feed-reel-backdrop';
+    
+    dialogConfig.scrollStrategy = this.overlay.scrollStrategies.reposition();  
     dialogConfig.data = {
       images: this.reels,       // array of ReelImage
       startIndex: 0,

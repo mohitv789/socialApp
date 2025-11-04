@@ -1,4 +1,19 @@
 <div class="custom-dialogbox">
+  <div class="row">
+    <div class="col-6">    
+      <h2 class="dialog-title">Reactions</h2>
+    </div>
+    <div class="col-6">    
+      <button mat-icon-button
+            class="close-button"
+            aria-label="Close dialog"
+            (click)="onClose()">
+      <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+  </div>
+
 
   <mat-tab-group class="group" [color]="'accent'" animationDuration="500ms">
     <mat-tab

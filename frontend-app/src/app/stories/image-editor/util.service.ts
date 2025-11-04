@@ -1,6 +1,7 @@
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { EventEmitter, Injectable } from '@angular/core';
-import { Subject }    from 'rxjs';
+import { Observable, of, Subject }    from 'rxjs';
+import { AiResponse } from './toolbar/ai-tools/ai-tools.component';
 
 @Injectable({
   providedIn: 'root',
@@ -105,4 +106,14 @@ export class UtilService {
       image,
       {withCredentials: true})
   }
+
+  process(action: string, prompt?: string, imageUrl?: string): Observable<AiResponse> {
+    // Replace with actual endpoint and payload
+    const payload = { action, prompt, imageUrl };
+    // return this.http.post<AiResponse>('/api/ai/process', payload);
+
+    // STUB: returns same imageUrl after a tiny delay
+    return of({ edited_url: imageUrl }).pipe();
+  }
+
 }

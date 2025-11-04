@@ -9,8 +9,10 @@
   justify-content: center;
   align-items: center;
   border-radius: 12px;
+  outline: none; /* prevent blue outline on container */
 }
 
+/* Optional flex wrapper */
 .reel-dialog-root .gallery-area {
   flex: 1 1 auto;
   min-height: 0;
@@ -20,12 +22,14 @@
   align-items: center;
 }
 
-/* Floating (close) button — fixed to viewport so it doesn't get clipped */
+/* ------------------------------------------------------------------
+   Close Button (focusable + hover/focus styles)
+------------------------------------------------------------------- */
 .close-overlay {
   position: fixed;
   top: 24px;
   right: 24px;
-  z-index: 12100; /* above pane but below any critical app overlays if needed */
+  z-index: 12100;
   background-color: rgba(0, 0, 0, 0.6);
   color: white;
   font-size: 22px;
@@ -37,9 +41,20 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background-color 0.2s ease, transform 0.2s ease;
+  transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
-.close-overlay:hover { background-color: rgb(168, 12, 12); transform: scale(1.1); }
+
+.close-overlay:hover {
+  background-color: rgb(168, 12, 12);
+  transform: scale(1.1);
+}
+
+/* visible keyboard focus for close button */
+.close-overlay:focus {
+  outline: 2px solid #ff5555;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(255, 85, 85, 0.4);
+}
 
 /* ------------------------------------------------------------------
    Slideshow styles
@@ -73,7 +88,9 @@
   pointer-events: auto;
 }
 
-/* Image element styling (semantic <img>) */
+/* ------------------------------------------------------------------
+   Image element styling (semantic <img>)
+------------------------------------------------------------------- */
 .slide-img {
   max-width: 100%;
   max-height: 100%;
@@ -83,9 +100,28 @@
   display: block;
   user-select: none;
   -webkit-user-drag: none;
+  border-radius: 4px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
-/* Controls (left/right) */
+/* Hover or focus states for keyboard users */
+.slide-img:hover,
+.slide-img:focus {
+  transform: scale(1.02);
+  box-shadow: 0 0 12px rgba(255, 255, 255, 0.35);
+  outline: none;
+}
+
+/* Visible focus ring for keyboard navigation */
+.slide-img:focus-visible {
+  outline: 3px solid #00bcd4;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 3px rgba(0, 188, 212, 0.5);
+}
+
+/* ------------------------------------------------------------------
+   Controls (left/right arrows)
+------------------------------------------------------------------- */
 .controls {
   position: absolute;
   inset: 0;
@@ -96,6 +132,7 @@
   z-index: 400;
   padding: 0 8px;
 }
+
 .controls .nav-btn {
   pointer-events: auto;
   background-color: rgba(0, 0, 0, 0.45);
@@ -110,14 +147,23 @@
   cursor: pointer;
   font-size: 28px;
   user-select: none;
-  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
-  transition: transform .12s ease, background .12s ease;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  transition: transform 0.12s ease, background 0.12s ease, box-shadow 0.12s ease;
 }
-.controls .prev { left: 10px; }
-.controls .next { right: 10px; }
-.controls .nav-btn:hover { transform: scale(1.03); background: rgba(0,0,0,0.6); }
 
-/* Dots */
+.controls .nav-btn:hover {
+  transform: scale(1.03);
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.controls .nav-btn:focus-visible {
+  outline: 2px solid #00bcd4;
+  outline-offset: 3px;
+}
+
+/* ------------------------------------------------------------------
+   Dots Navigation
+------------------------------------------------------------------- */
 .dots {
   position: absolute;
   bottom: 20px;
@@ -126,6 +172,7 @@
   justify-content: center;
   z-index: 600;
 }
+
 .dot {
   height: 10px;
   width: 10px;
@@ -133,9 +180,19 @@
   background-color: rgba(255, 255, 255, 0.5);
   border-radius: 50%;
   cursor: pointer;
-  transition: background-color 0.3s ease;
+  transition: background-color 0.3s ease, transform 0.1s ease;
 }
-.dot.active { background-color: white; box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
+
+.dot:hover,
+.dot:focus-visible {
+  background-color: rgba(255, 255, 255, 0.8);
+  transform: scale(1.2);
+}
+
+.dot.active {
+  background-color: white;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
 
 /* ------------------------------------------------------------------
    Fullscreen reels
@@ -153,14 +210,26 @@
 ------------------------------------------------------------------- */
 @media (max-width: 600px) {
   :root { --dialog-max-width: calc(100vw - 20px); }
-  .dialog-btn, .custom-modalbox .btn { width: 120px; }
+  .dialog-btn,
+  .custom-modalbox .btn { width: 120px; }
+
   .imagerow > img { width: 180px; height: 180px; }
-  .reel-dialog-root { height: calc(85vh - 12px); padding: 8px; border-radius: 8px; }
+
+  .reel-dialog-root {
+    height: calc(85vh - 12px);
+    padding: 8px;
+    border-radius: 8px;
+  }
+
   .close-overlay {
     top: 16px;
     right: 16px;
     width: 36px;
     height: 36px;
     font-size: 18px;
+  }
+
+  .slide-img:focus-visible {
+    outline: 2px solid #00bcd4;
   }
 }

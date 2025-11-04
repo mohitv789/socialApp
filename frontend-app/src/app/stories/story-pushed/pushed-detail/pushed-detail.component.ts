@@ -15,6 +15,7 @@ import { ProfileHTTPService } from 'src/app/auth/services/profile.service';
 import { Profile } from 'src/app/auth/models/profile';
 import { ChatroomDialogComponent } from 'src/app/webchat/chatroom-dialog/chatroom-dialog.component';
 import { ChatroomHTTPService } from 'src/app/webchat/services/chatroom.service';
+import { Overlay } from '@angular/cdk/overlay';
 @Component({
   selector: 'app-pushed-detail',
   templateUrl: './pushed-detail.component.html',
@@ -55,7 +56,7 @@ export class PushedDetailComponent implements OnInit{
   isBlocking: boolean = false;
   constructor(private route: ActivatedRoute,private sService: StoryHTTPService, private router: Router,
     private dialog: MatDialog,private authService: AuthService, private chatService: ChatroomHTTPService,
-    private fService: FriendHTTPService, private pService: ProfileHTTPService) {}
+    private fService: FriendHTTPService, private pService: ProfileHTTPService, private overlay:Overlay) {}
 
   ngOnInit(): void {
     this.route.params
@@ -78,6 +79,8 @@ export class PushedDetailComponent implements OnInit{
     dialogConfig.panelClass = ['comment-dialog', 'center-dialog'];
     dialogConfig.hasBackdrop = false;
     dialogConfig.disableClose = true;
+    
+    dialogConfig.scrollStrategy = this.overlay.scrollStrategies.reposition();
 
     this.dialog.open(StoryCommentCreateComponent, dialogConfig)
       .afterClosed()
@@ -128,6 +131,8 @@ export class PushedDetailComponent implements OnInit{
     dialogConfig.panelClass = ['reaction-dialog', 'center-dialog'];
     dialogConfig.hasBackdrop = false;
     dialogConfig.disableClose = true;
+    
+    dialogConfig.scrollStrategy = this.overlay.scrollStrategies.reposition();
 
     let likeObj: any = {}
     this.likes.forEach((like_user: number) => {
@@ -390,6 +395,8 @@ export class PushedDetailComponent implements OnInit{
     dialogConfig.panelClass = ['creation-dialog', 'center-dialog'];
     dialogConfig.hasBackdrop = false;
     dialogConfig.disableClose = true;
+    
+    dialogConfig.scrollStrategy = this.overlay.scrollStrategies.reposition();
     let storyObj: any = {}
     storyObj = {...this.story}
     dialogConfig.data = {
@@ -442,6 +449,8 @@ export class PushedDetailComponent implements OnInit{
         dialogConfig.panelClass = ['creation-dialog', 'center-dialog'];
         dialogConfig.hasBackdrop = false;
         dialogConfig.disableClose = true;
+    
+        dialogConfig.scrollStrategy = this.overlay.scrollStrategies.reposition();
         let storyObj: any = {}
         storyObj = {...this.story}
         dialogConfig.data = {

@@ -14,6 +14,7 @@ import * as uuid from 'uuid';
 import { ReactionInfoDialogComponent } from '../reaction-info-dialog/reaction-info-dialog.component';
 import { FriendHTTPService } from 'src/app/friends/services/friend.service';
 import { ChatroomHTTPService } from 'src/app/webchat/services/chatroom.service';
+import { Overlay } from '@angular/cdk/overlay';
 
 @Component({
   selector: 'app-story-detail',
@@ -45,7 +46,7 @@ export class StoryDetailComponent implements OnInit{
   chatroom_owner!: number;
   constructor(private router: Router, private route: ActivatedRoute,private sService: StoryHTTPService,
     private dialog: MatDialog,private authService: AuthService,private fService: FriendHTTPService,
-    private chatService: ChatroomHTTPService) {}
+    private chatService: ChatroomHTTPService, private overlay:Overlay) {}
 
   ngOnInit(): void {
     this.route.params
@@ -73,6 +74,8 @@ export class StoryDetailComponent implements OnInit{
     dialogConfig.hasBackdrop = true;
     dialogConfig.disableClose = true; // Prevent accidental outside click close
     dialogConfig.backdropClass = 'watch-reel-backdrop';
+    
+    dialogConfig.scrollStrategy = this.overlay.scrollStrategies.reposition();
     console.log(this.reels);
     dialogConfig.data = {
       images: this.reels,       // array of ReelImage
@@ -91,6 +94,8 @@ export class StoryDetailComponent implements OnInit{
     dialogConfig.panelClass = ['comment-dialog', 'center-dialog'];
     dialogConfig.hasBackdrop = false;
     dialogConfig.disableClose = true;
+    
+    dialogConfig.scrollStrategy = this.overlay.scrollStrategies.reposition();
 
     this.friends$.subscribe((friendList: any) => {
       friendList.forEach((friendItem: any) => {
@@ -146,6 +151,8 @@ export class StoryDetailComponent implements OnInit{
     dialogConfig.panelClass = ['reaction-dialog', 'center-dialog'];
     dialogConfig.hasBackdrop = false;
     dialogConfig.disableClose = true;
+    
+    dialogConfig.scrollStrategy = this.overlay.scrollStrategies.reposition();
     let likeObj: any = {}
     this.likes.forEach((like_user: number) => {
       let fullName;

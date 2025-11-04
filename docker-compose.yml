@@ -54,7 +54,8 @@ services:
       dockerfile: Dockerfile
     image: my-frontend:latest
     ports:
-      - "4200:81"  # map nginx:81 to host:4200
+      - "4300:81"  # map nginx:81 to host: 4300
+    container_name: frontend_ea
     restart: unless-stopped
     depends_on:
       - backend_ea

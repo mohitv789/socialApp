@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { StoryHTTPService } from '../../services/stories.service';
 import { StoryComment } from '../../models/StoryComment';
 import { MatDialog, MatDialogConfig, MatDialogRef } from '@angular/material/dialog';
+import { Overlay } from '@angular/cdk/overlay';
 import { ReelDialogComponent } from '../../reel/reel-dialog/reel-dialog.component';
 import { Reel } from '../../models/Reel';
 
@@ -40,8 +41,8 @@ export class StoryItemComponent implements OnInit, OnDestroy {
   loveNumbers!: number| undefined;
   celebrateNumbers!: number| undefined;
   commentNumbers!: number| undefined;
-
-  constructor(private router: Router, private sService: StoryHTTPService, private dialog: MatDialog) {}
+  constructor(private router: Router, private sService: StoryHTTPService, private dialog: MatDialog, private overlay: Overlay) {}
+  
 
   ngOnInit(): void {
     // fetch comments
@@ -106,17 +107,14 @@ export class StoryItemComponent implements OnInit, OnDestroy {
     this.dialog.closeAll();
 
     const dialogConfig = new MatDialogConfig<ReelDialogData>();
-    dialogConfig.autoFocus = true;
-    dialogConfig.disableClose = true;
-    
-    dialogConfig.panelClass = ['custom-modalbox', 'center-dialog']
+    dialogConfig.panelClass = ['watch-reel-dialog', 'center-dialog'];
     dialogConfig.hasBackdrop = true;
-    dialogConfig.backdropClass = 'custom-backdrop';
-    dialogConfig.width = '90vw';
-    dialogConfig.maxWidth = '1100px';
-    dialogConfig.height = '90vh';
-    dialogConfig.maxHeight = '90vh';
-    dialogConfig.position = { top: '5vh' };
+    
+    dialogConfig.scrollStrategy = this.overlay.scrollStrategies.reposition();
+    
+    dialogConfig.scrollStrategy = this.overlay.scrollStrategies.reposition();
+    dialogConfig.disableClose = true; // Prevent accidental outside click close
+    dialogConfig.backdropClass = 'watch-reel-backdrop';
     dialogConfig.data = { images: this.reels, startIndex, fromComponent: 'StoryItemComponent' };
 
     // open and keep reference
