@@ -15,6 +15,7 @@ set -e
 python manage.py wait_for_db
 
 # Run migrations
+python manage.py collectstatic --noinput --clear
 python manage.py migrate --noinput
 
 # Collect static optionally (uncomment if you use)

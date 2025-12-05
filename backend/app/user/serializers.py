@@ -22,28 +22,32 @@ class UserSerializer(ModelSerializer):
         return instance
 
     
-
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    def get_token(cls,user):
-        token = super().get_token(user)
-        
-        return token
+    def validate(self, attrs):
+        try:
+            data = super().validate(attrs)  # SimpleJWT does authentication here
+        except Exception:
+            raise InvalidToken("Invalid email or password")
 
-    def validate(self,attrs):
-        data = super().validate(attrs)
         user = self.user
-        data["user_id"] = user.id
         token = self.get_token(user)
-        data['access_token_expiry'] = int(round((datetime.now() + token.lifetime).timestamp()))
+
+        data["user_id"] = user.id
+        data['access_token_expiry'] = int(
+            (datetime.now() + token.lifetime).timestamp()
+        )
         return data
 
 class JWTCookieRefreshSerializer(TokenRefreshSerializer):
     refresh = None
 
     def validate(self, attrs):
-        attrs["refresh"] = self.context["request"].COOKIES.get(settings.SIMPLE_JWT["REFRESH_TOKEN_NAME"])
+        refresh_token = self.context["request"].COOKIES.get(
+            settings.SIMPLE_JWT["REFRESH_TOKEN_NAME"]
+        )
 
-        if attrs["refresh"]:
-            return super().validate(attrs)
-        else:
-            raise InvalidToken("No valid refresh token found")
+        if not refresh_token:
+            raise InvalidToken("Refresh token missing or expired")
+
+        attrs["refresh"] = refresh_token
+        return super().validate(attrs)

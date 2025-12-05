@@ -20,7 +20,7 @@ export class FriendHTTPService {
 
   listFriends(): Observable<any[]>  {
     return this.http.get<any[]>(
-      "http://localhost:4500/profile/friends",{withCredentials: true}
+      "http://localhost:4500/profile/friends/",{withCredentials: true}
     )
   }
 

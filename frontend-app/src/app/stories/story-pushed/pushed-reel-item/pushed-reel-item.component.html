@@ -1,19 +1,26 @@
-<div class="card" *ngIf="!!reel">
-  <div class="row">
-    <p class="titlebox">Caption : <strong>{{ reel.caption }}</strong></p>
+<div class="reel-item card shadow-sm border-0" *ngIf="!!reel">
+  <!-- Image section -->
+  <div class="reel-image-wrapper">
+    <img
+      class="reel-thumbnail img-fluid"
+      [src]="'http://localhost:4500' + reel.image"
+      [alt]="reel.caption || 'Reel image'"
+      loading="lazy"
+    />
   </div>
 
-  <div class="card-body row">
-    <div class="col-md-6">
-      <img class="img-thumbnail rounded mx-auto d-block" style="height:200px; border-radius: 5px;" [src]="'http://localhost:4500' + reel.image" alt="reel.caption">
-    </div>
-    <div class="col-md-6" style="display: flex;">
-      <a class="btn btn-primary" style="margin: auto auto;" (click)="goToReelDetail(reel.id)">Reel Detail</a>
-    </div>
+  <!-- Actions -->
+  <div class="reel-actions d-flex justify-content-center align-items-center">
+    <button class="btn btn-outline-dark btn-reel-detail" (click)="goToReelDetail(reel.id)">
+      <i class="bi bi-play-circle me-1"></i> Reel Detail
+    </button>
   </div>
 
-  <div class="card-footer">
-    <p class="float-start text-muted mb-0">{{ commentNumbers }} Comments</p>
-    <p class="float-end text-muted mb-0">{{ totalLikes }} Likes, {{ totalLoves }} Loves and {{ totalCelebrates }} Celebrations</p>
+  <!-- Footer -->
+  <div class="card-footer bg-light d-flex justify-content-between align-items-center small text-muted">
+    <span>{{ commentNumbers || 0 }} Comments</span>
+    <span>
+      {{ totalLikes || 0 }} Likes • {{ totalLoves || 0 }} Loves • {{ totalCelebrates || 0 }} Celebrations
+    </span>
   </div>
 </div>

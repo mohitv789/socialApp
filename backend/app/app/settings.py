@@ -22,10 +22,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = 'django-insecure-db*!en3et*h0!t2k^sp6-n_0!bfuty8$pi0+(d-sf($t-=-&gh'
-
-# SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
-
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1"
+]
 
 # Application definition
 
@@ -138,11 +139,20 @@ USE_TZ = True
 
 AUTH_USER_MODEL = 'core.User'
 # Static files (CSS, JavaScript, Images)
-STATIC_URL = '/static/static/'
-MEDIA_URL = '/static/media/'
 
-# MEDIA_ROOT = '/vol/web/media'
-# STATIC_ROOT = '/vol/web/static'
+# Media files (User uploads)
+# The URL to access media files
+# MEDIA_URL = '/media/'
+# # Where files are actually stored
+# MEDIA_ROOT = '/vol/web'
+STATIC_URL = '/static/' 
+# Where collectstatic puts files
+MEDIA_ROOT = '/vol/web/media'
+STATIC_ROOT = '/vol/web/static'
+
+# STATIC_URL = '/static/' 
+# # Where collectstatic puts files
+
 
 
 
@@ -201,3 +211,7 @@ LOGGING = {
 }
 
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
+
+
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER', 'redis://redis:6379/0')
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_BACKEND', 'redis://redis:6379/0')

@@ -1,4 +1,4 @@
-
+<!-- 
 <div class="container" *ngIf="!!loggedInUserId">
   <div *ngIf="(story$ | async) as story" class="row story-grid">
 
@@ -65,5 +65,230 @@
   </div>
 
 </div>
+.container {
+  margin: 20px auto;
+  padding: 20px auto;
+  justify-content: center;
+  width: 800px;
+}
 
+.btn {
+  border: 3px solid;
+  margin: 5px;
+  border-image-slice: 1;
+  background-color: #a0c9d5;
+  -webkit-text-fill-color: black !important;
+  text-decoration: none;
+  color: black !important;
+}
 
+.btn:hover, .btn:focus {
+  -webkit-text-fill-color: black !important;
+  margin: 5px;
+  border: 3px solid #0c527b !important;
+  box-shadow: #0c2b57 1px 0 10px;
+  text-decoration: underline;
+}
+
+.mainrow {
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 100%;
+  margin: 20px auto !important;
+}
+
+.reelrow {
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 100%;
+  padding-right: calc(var(--bs-gutter-x) * .5);
+  padding-left: calc(var(--bs-gutter-x) * .5);
+  margin-top: var(--bs-gutter-y);
+}
+
+.commentrow {
+  flex-shrink: 0;
+  width: 100%;
+  max-width: 100%;
+  padding-right: calc(var(--bs-gutter-x) * .5);
+  padding-left: calc(var(--bs-gutter-x) * .5);
+  margin-top: var(--bs-gutter-y);
+}
+.circular_image {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  overflow: hidden;
+  background-color: #a0c9d5;
+  display:inline-block;
+  vertical-align:middle;
+}
+
+ -->
+<div class="story-page container" *ngIf="!!loggedInUserId">
+  <div *ngIf="(story$ | async) as story" class="story-wrapper">
+
+    <!-- blocked notice -->
+    <div *ngIf="!!isBlocking" class="blocked-note">
+      You have been blocked by <strong>{{ fullName }}</strong>, so you cannot start or enter chatrooms.
+    </div>
+    <article
+      class="story-card card story-card--modern mb-4" [attr.aria-labelledby]="'story-title-' + story.id">
+      <div class="card-body">
+        <!-- header: title + tags + author chip -->
+        <div class="story-header d-flex align-items-start justify-content-between">
+          <div class="story-header-left">
+            <h3 id="story-title-{{story.id}}" class="story-title mb-1">{{ story.title }}</h3>
+            <div class="tag-row" *ngIf="story.tags?.length">
+              <ng-container *ngFor="let tag of story.tags">
+                <span class="badge tag-badge">#{{ tag.name }}</span>
+              </ng-container>
+            </div>
+          </div>
+
+          <div class="author-chip d-flex align-items-center">
+            <div class="published-label small text-muted">Published by</div>
+            <img *ngIf="profile" class="avatar ms-2" [src]="'http://localhost:4500' + profile.avatar" alt="Author avatar">
+            <a class="author-link ms-2" [routerLink]="['/profile/' + story.owner]">{{ fullName || storyOwner }}</a>
+          </div>
+        </div>
+        <hr>
+
+        <div class="story-image card shadow-sm">
+          <img [src]="'http://localhost:4500' + story.image" [alt]="story.title" class="img-fluid rounded story-img" loading="lazy">
+        </div>
+
+        <!-- body: left text/actions, right image -->
+        <div class="story-body d-flex flex-column flex-lg-row align-items-stretch gap-3 mt-3">
+          <!-- left column: description + actions -->
+          <div class="row">
+            <p *ngIf="story.description" class="lead story-description mb-2"> {{ story.description }}</p>
+            <p *ngIf="story.longDescription" class="text-muted mb-3">{{ story.longDescription }}</p>            
+          </div>
+        </div>
+        <div class="row">
+          <div class="col-md-6 primary-actions">
+            <button class="btn btn-outline-primary" *ngIf="!!isFriend && !chatroom_membership && !!showINITChatroom && !isBlocking"
+                    (click)="createStoryChatRoom()">Start Chat</button>
+
+            <button class="btn btn-outline-primary" *ngIf="!!isFriend && !!chatroom_membership && (!isBlocking || !!can_delete_charoom)"
+                    (click)="goToChatRoom()">Go to Chat</button>
+
+            <button class="btn btn-outline-primary" *ngIf="!!isFriend && isFriend == true" (click)="addComment()">Add Comment</button>
+
+            <button class="btn btn-danger" *ngIf="!!isFriend && !!can_delete_charoom" (click)="deleteChatroom()">Delete Chat</button>
+          </div>
+
+          <div class="col-md-6 reaction-buttons">
+            <button class="btn btn-sm btn-outline-info" *ngIf="showLike" (click)="addLike()">Like</button>
+            <button class="btn btn-sm btn-outline-info" *ngIf="!showLike" (click)="deleteLike()">Unlike</button>
+
+            <button class="btn btn-sm btn-outline-pink" *ngIf="showLove" (click)="addLove()">Love</button>
+            <button class="btn btn-sm btn-outline-pink" *ngIf="!showLove" (click)="deleteLove()">Unlove</button>
+
+            <button class="btn btn-sm btn-outline-warning" *ngIf="showCelebrate" (click)="addCelebrate()">Celebrate</button>
+            <button class="btn btn-sm btn-outline-warning" *ngIf="!showCelebrate" (click)="deleteCelebrate()">Remove Celebrate</button>
+          </div>
+        </div>
+
+        <div class="row meta-row small text-muted">
+          <div class="col-md-6 float-start" *ngIf="comments.length > 0">Comments: <strong>{{ comments.length }}</strong></div>
+          <div *ngIf="totalLikes || totalLoves || totalCelebrates" class="col-md-6 float-end reaction-link" (click)="showReactionInfo()">
+            Likes: {{ totalLikes }} • Loves: {{ totalLoves }} • Celebrations: {{ totalCelebrates }}
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- main story card -->
+    <!-- <article class="story-card card mb-4">
+      <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-2">
+          <div>
+            <h3 class="story-title mb-1">{{ story.title }}</h3>
+            <div class="tag-row">
+              <ng-container *ngFor="let tag of story.tags">
+                <span class="badge tag-badge">#{{ tag.name }}</span>
+              </ng-container>
+            </div>
+          </div>
+
+          <div class="author-info text-end">
+            <div class="small text-muted">Published by</div>
+            <div class="d-flex align-items-center justify-content-end">
+              <img *ngIf="profile" class="avatar" [src]="'http://localhost:4500' + profile.avatar" alt="Author avatar">
+              <a class="author-link ms-2" [routerLink]="['/profile/' + story.owner]">{{ fullName || storyOwner }}</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3 align-items-start">
+          <div class="col-lg-7">
+            <p class="mb-1 lead" *ngIf="story.description">{{ story.description }}</p>
+            <p class="mb-2 text-muted" *ngIf="story.longDescription">{{ story.longDescription }}</p>
+
+            <div class="action-groups d-flex flex-wrap gap-2 align-items-center mt-3">
+              <div class="primary-actions btn-group">
+                <button class="btn btn-outline-primary" *ngIf="!!isFriend && !chatroom_membership && !!showINITChatroom && !isBlocking"
+                        (click)="createStoryChatRoom()">Start Chat</button>
+
+                <button class="btn btn-outline-primary" *ngIf="!!isFriend && !!chatroom_membership && (!isBlocking || !!can_delete_charoom)"
+                        (click)="goToChatRoom()">Go to Chat</button>
+
+                <button class="btn btn-outline-secondary" *ngIf="!!isFriend && isFriend == true" (click)="addComment()">Add Comment</button>
+
+                <button class="btn btn-danger" *ngIf="!!isFriend && !!can_delete_charoom" (click)="deleteChatroom()">Delete Chat</button>
+              </div>
+
+              <div class="ms-auto small-reactions d-flex gap-2">
+                <button class="btn btn-sm btn-outline-info" *ngIf="showLike" (click)="addLike()">Like</button>
+                <button class="btn btn-sm btn-outline-info" *ngIf="!showLike" (click)="deleteLike()">Unlike</button>
+                <button class="btn btn-sm btn-outline-pink" *ngIf="showLove" (click)="addLove()">Love</button>
+                <button class="btn btn-sm btn-outline-pink" *ngIf="!showLove" (click)="deleteLove()">Unlove</button>
+                <button class="btn btn-sm btn-outline-warning" *ngIf="showCelebrate" (click)="addCelebrate()">Celebrate</button>
+                <button class="btn btn-sm btn-outline-warning" *ngIf="!showCelebrate" (click)="deleteCelebrate()">Remove Celebrate</button>
+              </div>
+            </div>
+            <hr>
+            <div class="mt-3 text-muted d-flex justify-content-between small">
+              <div *ngIf="comments.length > 0">Comments: <strong>{{ comments.length }}</strong></div>
+              <div *ngIf="totalLikes || totalLoves || totalCelebrates" class="reaction-link" (click)="showReactionInfo()">
+                Likes: {{ totalLikes }} • Loves: {{ totalLoves }} • Celebrations: {{ totalCelebrates }}
+              </div>
+            </div>
+          </div>
+
+          <div class="col-lg-5">
+            <div class="story-image card">
+              <img [src]="'http://localhost:4500' + story.image" alt="{{ story.title }}" class="img-fluid rounded">
+            </div>
+          </div>
+        </div>
+      </div>
+    </article> -->
+
+    
+    
+
+    <!-- reels grid: two-column cards -->
+    <section class="reels-grid mb-4" [ngClass]="{ 'single-reel-center': story.reels.length === 1 }"> 
+      <div class="row gx-3 gy-3">
+        <div class="col-md-6" *ngFor="let reelEl of story.reels; let i = index">
+          <div class="reel-card">
+            <div class="reel-caption">Caption : <strong>{{ reelEl.caption }}</strong></div>
+            <div class="reel-body d-flex justify-content-between align-items-center">
+              <div class="reel-thumb">
+                <app-pushed-reel-item [reel]="reelEl" [index]="i"></app-pushed-reel-item>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- comments list -->
+    <section *ngIf="comments.length > 0" class="comments-list" [ngClass]="{ 'single-reel-center': story.reels.length === 1 }">
+      <app-story-comment-item *ngFor="let commentEl of comments; let i = index" [comment]="commentEl" [index]="i"></app-story-comment-item>
+    </section>
+  </div>
+</div>

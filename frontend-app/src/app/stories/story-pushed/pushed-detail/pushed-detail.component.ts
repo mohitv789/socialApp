@@ -70,6 +70,20 @@ export class PushedDetailComponent implements OnInit{
 
   }
 
+  openReelDetail(reel: any): void {
+    if (!reel) { console.warn('openReelDetail called without reel'); return; }
+
+    // prefer navigation if you have a route configured
+    if (reel.id) {
+      this.router.navigate(['/reel', reel.id]);
+      return;
+    }
+
+    // fallback: emit an event or open a modal — for now we log
+    console.log('openReelDetail called for reel', reel);
+  }
+
+
   addComment() {
     if (this.dialog.openDialogs.length > 0) {
       this.dialog.closeAll();

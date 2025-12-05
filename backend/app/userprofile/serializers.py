@@ -13,7 +13,6 @@ class ProfileImageSerializer(serializers.ModelSerializer):
 
 
 class FriendSerializer(serializers.ModelSerializer):
-    avatar = serializers.ImageField(read_only=True, source='userprofile.avatar')
     class Meta:
         model = get_user_model()
         fields = ('id', 'first_name','last_name', 'email','avatar')

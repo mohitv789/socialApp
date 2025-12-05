@@ -32,6 +32,7 @@ websocket_urlpatterns = [
     path("ws/<int:chatroom_id>/",WebChatConsumer.as_asgi()),
 ]
 
+
 if settings.DEBUG:
     urlpatterns += static(
         settings.MEDIA_URL,

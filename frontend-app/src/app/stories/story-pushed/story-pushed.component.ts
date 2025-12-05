@@ -17,7 +17,9 @@ export class StoryPushedComponent implements OnInit {
       this.story_stories$ = this.sService.fetchPushedStories();
       this.reel_stories$ = this.sService.fetchPushedReelStories();
       this.stories$ = merge(this.story_stories$,this.reel_stories$);
+      console.log(this.stories$)
     }, 100);
+
 
   }
 

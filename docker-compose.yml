@@ -1,92 +1,110 @@
+version: "3.8"
+
 services:
   db_ea:
-    image: postgres:14  
+    image: postgres:14
     container_name: postgresql_ea
     restart: always
     volumes:
       - db-ea-data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=${DB_NAME}
-      - POSTGRES_USER=${DB_USER}
-      - POSTGRES_PASSWORD=${DB_PASS}
+      POSTGRES_DB: "${DB_NAME}"
+      POSTGRES_USER: "${DB_USER}"
+      POSTGRES_PASSWORD: "${DB_PASS}"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7.0.11-alpine
+    container_name: redis_ea
+
   backend_ea:
     build:
-      context: ./backend    
-    image: mywebapp/backend:latest
+      context: ./backend
+    image: backend:latest
     container_name: backend_ea
+    restart: unless-stopped
     ports:
-      - 4500:8000
+      - "4500:8000"
     volumes:
       - ./backend/app:/app
       - static-ea-data:/vol/web
     command: >
       sh -c "python manage.py wait_for_db &&
-             python manage.py migrate &&
+             python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
              python manage.py runserver 0.0.0.0:8000"
     environment:
-      - DB_HOST=db_ea
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASS=${DB_PASS}
+      DB_HOST: db_ea
+      DB_NAME: "${DB_NAME}"
+      DB_USER: "${DB_USER}"
+      DB_PASS: "${DB_PASS}"
+      # Add other env vars like SECRET_KEY, DEBUG etc. as needed
     depends_on:
-      - db_ea
-
+      db_ea:
+        condition: service_healthy
 
   websockets:
+    # If websockets is built from the same backend repo you can replace `image:` with `build:` like backend_ea
     image: mywebapp/backend:latest
     container_name: websocket_ea
+    restart: unless-stopped
     command: >
       sh -c "daphne -b 0.0.0.0 -p 8080 app.asgi:application"
     ports:
-      - 8080:8080
+      - "8080:8080"
     environment:
-      - DB_HOST=db_ea
-      - DB_NAME=${DB_NAME}
-      - DB_USER=${DB_USER}
-      - DB_PASS=${DB_PASS}
+      DB_HOST: db_ea
+      DB_NAME: "${DB_NAME}"
+      DB_USER: "${DB_USER}"
+      DB_PASS: "${DB_PASS}"
     depends_on:
       - backend_ea
       - db_ea
 
-  frontend:
+  celery:
+    container_name: celery_ea
     build:
-      context: ./frontend-app
-      dockerfile: Dockerfile
-    image: my-frontend:latest
-    ports:
-      - "4300:81"  # map nginx:81 to host: 4300
-    container_name: frontend_ea
+      context: ./backend
     restart: unless-stopped
+    command: celery --app=app worker --loglevel=info -Q queue1
+    volumes:
+      - ./backend:/usr/src/app
+    environment:
+      DEBUG: "1"
+      SECRET_KEY: "${SECRET_KEY:-django-insecure-db*!en3et*h0!t2k^sp6-n_0!bfuty8$pi0+(d-sf($t-=-&gh}"
+      DB_HOST: db_ea
+      DB_NAME: "${DB_NAME}"
+      DB_USER: "${DB_USER}"
+      DB_PASS: "${DB_PASS}"
+      # Recommended: broker URL for celery
+      # CELERY_BROKER_URL: "redis://redis:6379/0"
     depends_on:
+      - redis
       - backend_ea
       - db_ea
-
-
 
   proxy:
     build:
       context: ./proxy
     container_name: proxy_ea
     restart: always
-
     environment:
-      - APP_UPSTREAM=backend_ea:8000     # matches backend internal port
-      - WS_UPSTREAM=websockets:8080   # matches websockets internal port
-
+      APP_UPSTREAM: "backend_ea:8000"   # matches backend internal port
+      WS_UPSTREAM: "websockets:8080"    # matches websockets internal port
     depends_on:
       - backend_ea
       - websockets
     ports:
-      - 80:80
+      - "80:80"
     volumes:
-      - ./frontend-app/dist/frontend-app:/usr/share/nginx/html:ro
       - static-ea-data:/vol/static
-  
-
-
+      - media-ea-data:/vol/web
 
 volumes:
   db-ea-data:
   static-ea-data:
-
-      
+  media-ea-data:

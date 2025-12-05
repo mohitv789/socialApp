@@ -19,8 +19,9 @@ from google.auth.transport.requests import Request as GoogleRequest
 from rest_framework import status
 from .authentication import JWTCookieAuthentication
 from rest_framework_simplejwt.views import TokenObtainPairView,TokenRefreshView
-
+from rest_framework.permissions import AllowAny
 class RegisterAPIView(APIView):
+    permission_classes = [AllowAny]
     def post(self, request):
         data = request.data
 
